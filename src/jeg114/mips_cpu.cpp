@@ -55,6 +55,7 @@ mips_error mips_cpu_set_pc(mips_cpu_h state, uint32_t pc){
 	}
 	else{
 		state->pc = pc;
+		state->pcN = pc + 4;
 		return mips_Success;
 	}
 }
@@ -497,7 +498,7 @@ mips_error mips_cpu_step(mips_cpu_h state){
 			step_err =  mips_ExceptionInvalidInstruction;
 		}
 	}
-	if (state->debug_level >= 5){ fprintf(state->debug_out, "StepError %i\n", step_err); }
+	if (state->debug_level >= 5){ fprintf(state->debug_out, "StepError 0x%08x\n", step_err); }
 	return step_err;
 }
 

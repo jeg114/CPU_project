@@ -193,8 +193,18 @@ mips_error SW(mips_cpu_h state, uint8_t rs, uint8_t rt, uint16_t imm){
 
 mips_error J(mips_cpu_h state, uint32_t target){
 	//Can not use advPC() because target is not an offset added to next pc
+	state->pc = state->pcN;
+
 	//NextPc = Top4Bits NextPC | target << 2)
-	state->pcN = (state->pcN & 0xF0000000) | (target << 2) & 0xF0000000;
+	state->pcN = (state->pcN & 0xF0000000) | (target << 2) & 0x0FFFFFFF;
+
+	if (state->debug_level >= 2){
+		fprintf(state->debug_out, "New PC: 0x%08x     Next PC: 0x%08x \n-----------------------------\n", state->pc, state->pcN);
+	}
+	else if (state->debug_level == 1){
+		fprintf(state->debug_out, "New PC: 0x%08x\n----------------------------\n", state->pc);
+	}
+
 	return mips_Success;
 }
 

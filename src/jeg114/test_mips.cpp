@@ -39,6 +39,7 @@ void test_mips_SUBU(mips_cpu_h state);
 void test_mips_AND(mips_cpu_h state);
 void test_mips_OR(mips_cpu_h state);
 void test_mips_XOR(mips_cpu_h state);
+void test_mips_J(mips_cpu_h state);
 
 mips_error set_step_read(mips_cpu_h state,
 	const uint32_t& reg1,
@@ -81,6 +82,7 @@ int main(){
 	test_mips_SUBU(cpu);
 	test_mips_AND(cpu);
 	test_mips_OR(cpu);
+	test_mips_J(cpu);
 	mips_test_end_suite();
 
 	cin >> debug;
@@ -146,15 +148,38 @@ mips_error set_step_read(mips_cpu_h state,
 	const uint32_t& instr, 
 	const uint32_t& regRead, 
 	uint32_t& regRead_v){
-	mips_cpu_set_register(state, reg1, reg1_v);
-	mips_cpu_set_register(state, reg2, reg2_v);
+
+	mips_error err = mips_Success;
+
+	if (reg1 <= 31){
+		err = mips_cpu_set_register(state, reg1, reg1_v);
+	}
+	else if (reg1 == 32){
+		err = mips_cpu_set_pc(state, reg1_v);
+	}
+
+	if (err != mips_Success){
+		return err;
+	}
+
+	if (reg2 <= 31){
+		err = mips_cpu_set_register(state, reg2, reg2_v);
+	}
+	else if (reg2 == 32){
+		err = mips_cpu_set_pc(state, reg2_v);
+	}
+
+	if (err != mips_Success){
+		return err;
+	}
+
 
 	uint32_t PC;
 	mips_cpu_get_pc(state, &PC);
 
 	uint8_t buffer[4];
 	to_small_Endi(instr, buffer);
-	mips_error err = mips_mem_write(state->mem_handle, PC, 4, buffer);
+	err = mips_mem_write(state->mem_handle, PC, 4, buffer);
 	if (err != mips_Success){
 		return err;
 	}
@@ -473,4 +498,33 @@ void test_mips_XOR(mips_cpu_h state){
 	instr = R_type_instr(rs, rt, rd, 1, 37);
 	err = set_step_read(state, rs, rs_v, rt, rt_v, instr, rd, rd_v);
 	mips_test_end_test(testId, (err == mips_ExceptionInvalidInstruction), "Invalid instruction (Shift != 0) ");
+}
+
+void test_mips_J(mips_cpu_h state){
+	//J - J-type - Opcode 0x2 / d2
+
+	//Test1 - Functionality1 (Jump from known pc and pcN)
+	int testId = mips_test_begin_test("J");
+	uint32_t target = 0;
+	uint32_t PC_after;
+	uint32_t instr = J_type_instr(true, target);
+
+	//Set J instruction on PC = 0, PCN = 4
+	mips_error err = set_step_read(state, 32, 0, 33, 3, instr, 32, PC_after);
+
+	//Execute delay slot instruction as NOP
+	uint8_t buffer[4];
+	to_small_Endi(R_type_instr(0, 0, 0, 0, 32), buffer);
+	err = mips_mem_write(state->mem_handle, PC_after, 4, buffer);
+
+	if (err==mips_Success)
+	err = mips_cpu_step(state);
+
+	if (err == mips_Success)
+	err = mips_cpu_get_pc(state, &PC_after);
+
+
+	//Check adress is as expected (top 4 bits pcn(4) = 0 +target(0) = 0
+	bool success = (err == mips_Success) && (PC_after == 0);
+	mips_test_end_test(testId, success, "Jump from PC 0, target 0");
 }

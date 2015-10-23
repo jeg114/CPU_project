@@ -47,8 +47,7 @@ mips_error set_step_read(mips_cpu_h state,
 	const uint32_t& reg2_v,
 	const uint32_t& instr,
 	const uint32_t& regRead,
-	uint32_t& regRead_v,
-	bool& no_change_regs);
+	uint32_t& regRead_v);
 
 int main(){
 
@@ -146,39 +145,16 @@ mips_error set_step_read(mips_cpu_h state,
 	const uint32_t& reg2_v, 
 	const uint32_t& instr, 
 	const uint32_t& regRead, 
-	uint32_t& regRead_v,
-	bool& no_change_regs){
-
-
-	mips_error err = mips_cpu_set_register(state, reg1, reg1_v);
-	if (err != mips_Success){
-		return err;
-	}
-
-	err= mips_cpu_set_register(state, reg2, reg2_v);
-	if (err != mips_Success){
-		return err;
-	}
-
-	//Save state of all registers to check if changed
-	uint32_t tmp = 0;
-	uint32_t regs_save[33];
-	for (int i = 0; i <= 31; i++){
-		err = mips_cpu_set_register(state, i, tmp);
-		if (err != mips_Success){
-			return err;
-		}
-		regs_save[i] = tmp;
-	}
+	uint32_t& regRead_v){
+	mips_cpu_set_register(state, reg1, reg1_v);
+	mips_cpu_set_register(state, reg2, reg2_v);
 
 	uint32_t PC;
 	mips_cpu_get_pc(state, &PC);
 
-	regs_save[32] = state->pc;
-
 	uint8_t buffer[4];
 	to_small_Endi(instr, buffer);
-	err = mips_mem_write(state->mem_handle, PC, 4, buffer);
+	mips_error err = mips_mem_write(state->mem_handle, PC, 4, buffer);
 	if (err != mips_Success){
 		return err;
 	}
@@ -188,24 +164,6 @@ mips_error set_step_read(mips_cpu_h state,
 	if (err != mips_Success){
 		return err;
 	}
-
-	no_change_regs = true;
-	mips_cpu_get_pc(state, &PC);
-	if (regs_save[32] != PC){
-		no_change_regs = false;
-	}
-	int i = 0;
-	while (no_change_regs && i <= 31){
-		err = mips_cpu_set_register(state, i, tmp);
-		if (err != mips_Success){
-			return err;
-		}
-		if (regs_save[i] != tmp){
-			no_change_regs = true;
-		}
-		i++;
-	}
-
 
 
 	if (regRead <= 31){
@@ -230,8 +188,7 @@ void test_mips_ADD(mips_cpu_h state){
 	uint32_t rt_v = 2;
 	uint32_t rd_v;
 	uint32_t instr = R_type_instr(rs, rt, rd, 0, 32);
-	bool no_regs_changed;
-	mips_error err = set_step_read(state, rs, rs_v, rt, rt_v, instr, rd, rd_v, no_regs_changed);
+	mips_error err = set_step_read(state, rs, rs_v, rt, rt_v, instr, rd, rd_v);
 	mips_test_end_test(testId, (err == mips_Success) && (rd_v == 3), "Testing 1+2 == 3");
 
 	//Test2 - Modify $0
@@ -242,8 +199,8 @@ void test_mips_ADD(mips_cpu_h state){
 	rs_v = 1;
 	rt_v = 2;
 	instr = R_type_instr(rs, rt, rd, 0, 32);
-	err = set_step_read(state, rs, rs_v, rt, rt_v, instr, rd, rd_v, no_regs_changed);
-	mips_test_end_test(testId, (err == mips_Success) && (rd_v == 0) && no_regs_changed, "Testing 1+2 == 0 when rd = 0");
+	err = set_step_read(state, rs, rs_v, rt, rt_v, instr, rd, rd_v);
+	mips_test_end_test(testId, (err == mips_Success) && (rd_v == 0), "Testing 1+2 == 0 when rd = 0");
 
 	//Test3 - Positive Overflow
 	testId = mips_test_begin_test("ADD");
@@ -255,8 +212,8 @@ void test_mips_ADD(mips_cpu_h state){
 	instr = R_type_instr(rs, rt, rd, 0, 32);
 	uint32_t rd_before;
 	mips_cpu_get_register(state, rd, &rd_before);
-	err = set_step_read(state, rs, rs_v, rt, rt_v, instr, rd, rd_v, no_regs_changed);
-	mips_test_end_test(testId, (err == mips_ExceptionArithmeticOverflow) && (rd_v == rd_before) && no_regs_changed, "Testing 0x7FFFFFF+1 == Overflow");
+	err = set_step_read(state, rs, rs_v, rt, rt_v, instr, rd, rd_v);
+	mips_test_end_test(testId, (err == mips_ExceptionArithmeticOverflow) && (rd_v == rd_before), "Testing 0x7FFFFFF+1 == Overflow");
 
 	//Test4 - Negative Overflow
 	testId = mips_test_begin_test("ADD");
@@ -267,8 +224,8 @@ void test_mips_ADD(mips_cpu_h state){
 	rt_v = 0x80000000;
 	instr = R_type_instr(rs, rt, rd, 0, 32);
 	mips_cpu_get_register(state, rd, &rd_before);
-	err = set_step_read(state, rs, rs_v, rt, rt_v, instr, rd, rd_v, no_regs_changed);
-	mips_test_end_test(testId, (err == mips_ExceptionArithmeticOverflow) && (rd_v == rd_before) && no_regs_changed, "Testing 0x800000000+0x80000000 == Overflow");
+	err = set_step_read(state, rs, rs_v, rt, rt_v, instr, rd, rd_v);
+	mips_test_end_test(testId, (err == mips_ExceptionArithmeticOverflow) && (rd_v == rd_before), "Testing 0x800000000+0x80000000 == Overflow");
 
 	//Test5 - Invalid instruction (Shift != 0) 
 	testId = mips_test_begin_test("ADD");
@@ -278,8 +235,8 @@ void test_mips_ADD(mips_cpu_h state){
 	rs_v = 0x80000000;
 	rt_v = 0x80000000;
 	instr = R_type_instr(rs, rt, rd, 1, 32);
-	err = set_step_read(state, rs, rs_v, rt, rt_v, instr, rd, rd_v, no_regs_changed);
-	mips_test_end_test(testId, (err == mips_ExceptionInvalidInstruction) && no_regs_changed, "Invalid instruction (Shift != 0) ");
+	err = set_step_read(state, rs, rs_v, rt, rt_v, instr, rd, rd_v);
+	mips_test_end_test(testId, (err == mips_ExceptionInvalidInstruction), "Invalid instruction (Shift != 0) ");
 }
 
 void test_mips_ADDU(mips_cpu_h state){
@@ -294,8 +251,7 @@ void test_mips_ADDU(mips_cpu_h state){
 	uint32_t rt_v = 2;
 	uint32_t rd_v;
 	uint32_t instr = R_type_instr(rs, rt, rd, 0, 33);
-	bool no_regs_changed;
-	mips_error err = set_step_read(state, rs, rs_v, rt, rt_v, instr, rd, rd_v, no_regs_changed);
+	mips_error err = set_step_read(state, rs, rs_v, rt, rt_v, instr, rd, rd_v);
 	mips_test_end_test(testId, (err == mips_Success) && (rd_v == 3), "Testing 1+2 == 3");
 
 	//Test2 - Modify $0
@@ -306,7 +262,7 @@ void test_mips_ADDU(mips_cpu_h state){
 	rs_v = 1;
 	rt_v = 2;
 	instr = R_type_instr(rs, rt, rd, 0, 33);
-	err = set_step_read(state, rs, rs_v, rt, rt_v, instr, rd, rd_v, no_regs_changed);
+	err = set_step_read(state, rs, rs_v, rt, rt_v, instr, rd, rd_v);
 	mips_test_end_test(testId, (err == mips_Success) && (rd_v == 0), "Testing 1+2 == 0 when rd = 0");
 
 	//Test3 - Positive Overflow 
@@ -317,7 +273,7 @@ void test_mips_ADDU(mips_cpu_h state){
 	rs_v = 0x7FFFFFFF;
 	rt_v = 1;
 	instr = R_type_instr(rs, rt, rd, 0, 33);
-	err = set_step_read(state, rs, rs_v, rt, rt_v, instr, rd, rd_v, no_regs_changed);
+	err = set_step_read(state, rs, rs_v, rt, rt_v, instr, rd, rd_v);
 	mips_test_end_test(testId, (err == mips_Success) && (rd_v == 0x80000000), "Testing 0x7FFFFFF+1 == 0x80000000");
 
 	//Test4 - Negative Overflow 
@@ -328,7 +284,7 @@ void test_mips_ADDU(mips_cpu_h state){
 	rs_v = 0x80000000;
 	rt_v = 0x80000000;
 	instr = R_type_instr(rs, rt, rd, 0, 33);
-	err = set_step_read(state, rs, rs_v, rt, rt_v, instr, rd, rd_v, no_regs_changed);
+	err = set_step_read(state, rs, rs_v, rt, rt_v, instr, rd, rd_v);
 	mips_test_end_test(testId, (err == mips_Success) && (rd_v == 0), "Testing 0x80000000+0x80000000 == 0");
 
 	//Test5 - Invalid instruction (Shift != 0) 
@@ -339,7 +295,7 @@ void test_mips_ADDU(mips_cpu_h state){
 	rs_v = 0x80000000;
 	rt_v = 0x80000000;
 	instr = R_type_instr(rs, rt, rd, 1, 33);
-	err = set_step_read(state, rs, rs_v, rt, rt_v, instr, rd, rd_v, no_regs_changed);
+	err = set_step_read(state, rs, rs_v, rt, rt_v, instr, rd, rd_v);
 	mips_test_end_test(testId, (err == mips_ExceptionInvalidInstruction), "Invalid instruction (Shift != 0) ");
 
 }
@@ -356,8 +312,7 @@ void test_mips_SUBU(mips_cpu_h state){
 	uint32_t rt_v = 1;
 	uint32_t rd_v;
 	uint32_t instr = R_type_instr(rs, rt, rd, 0, 35);
-	bool no_regs_changed;
-	mips_error err = set_step_read(state, rs, rs_v, rt, rt_v, instr, rd, rd_v, no_regs_changed);
+	mips_error err = set_step_read(state, rs, rs_v, rt, rt_v, instr, rd, rd_v);
 	mips_test_end_test(testId, (err == mips_Success) && (rd_v == 1), "Testing 2-1 == 1");
 
 	//Test2 - Modify $0
@@ -368,7 +323,7 @@ void test_mips_SUBU(mips_cpu_h state){
 	rs_v = 1;
 	rt_v = 2;
 	instr = R_type_instr(rs, rt, rd, 0, 35);
-	err = set_step_read(state, rs, rs_v, rt, rt_v, instr, rd, rd_v, no_regs_changed);
+	err = set_step_read(state, rs, rs_v, rt, rt_v, instr, rd, rd_v);
 	mips_test_end_test(testId, (err == mips_Success) && (rd_v == 0), "Testing 1-2 == 0 when rd = 0");
 
 	//Test3 - Positive Overflow 
@@ -379,7 +334,7 @@ void test_mips_SUBU(mips_cpu_h state){
 	rs_v = 0x7FFFFFFF;
 	rt_v = -1;
 	instr = R_type_instr(rs, rt, rd, 0, 35);
-	err = set_step_read(state, rs, rs_v, rt, rt_v, instr, rd, rd_v, no_regs_changed);
+	err = set_step_read(state, rs, rs_v, rt, rt_v, instr, rd, rd_v);
 	mips_test_end_test(testId, (err == mips_Success) && (rd_v == 0x80000000), "Testing 0x7FFFFFF-(-1) == 0x80000000");
 
 	//Test4 - Negative Overflow 
@@ -390,7 +345,7 @@ void test_mips_SUBU(mips_cpu_h state){
 	rs_v = 0x80000000;
 	rt_v = 1;
 	instr = R_type_instr(rs, rt, rd, 0, 35);
-	err = set_step_read(state, rs, rs_v, rt, rt_v, instr, rd, rd_v, no_regs_changed);
+	err = set_step_read(state, rs, rs_v, rt, rt_v, instr, rd, rd_v);
 	mips_test_end_test(testId, (err == mips_Success) && (rd_v == 0x7FFFFFFF), "Testing 0x80000000-0x00000001 == 0x7FFFFFFF");
 
 	//Test5 - Invalid instruction (Shift != 0) 
@@ -401,7 +356,7 @@ void test_mips_SUBU(mips_cpu_h state){
 	rs_v = 0x80000000;
 	rt_v = 0x80000000;
 	instr = R_type_instr(rs, rt, rd, 1, 35);
-	err = set_step_read(state, rs, rs_v, rt, rt_v, instr, rd, rd_v, no_regs_changed);
+	err = set_step_read(state, rs, rs_v, rt, rt_v, instr, rd, rd_v);
 	mips_test_end_test(testId, (err == mips_ExceptionInvalidInstruction), "Invalid instruction (Shift != 0) ");
 
 }
@@ -418,8 +373,7 @@ void test_mips_AND(mips_cpu_h state){
 	uint32_t rt_v = 3;
 	uint32_t rd_v;
 	uint32_t instr = R_type_instr(rs, rt, rd, 0, 36);
-	bool no_regs_changed;
-	mips_error err = set_step_read(state, rs, rs_v, rt, rt_v, instr, rd, rd_v, no_regs_changed);
+	mips_error err = set_step_read(state, rs, rs_v, rt, rt_v, instr, rd, rd_v);
 	mips_test_end_test(testId, (err == mips_Success) && (rd_v == 3), "Testing F & 3 == 3");
 
 	//Test2 - Modify $0
@@ -430,7 +384,7 @@ void test_mips_AND(mips_cpu_h state){
 	rs_v = 0xFF;
 	rt_v = 0xEF;
 	instr = R_type_instr(rs, rt, rd, 0, 36);
-	err = set_step_read(state, rs, rs_v, rt, rt_v, instr, rd, rd_v, no_regs_changed);
+	err = set_step_read(state, rs, rs_v, rt, rt_v, instr, rd, rd_v);
 	mips_test_end_test(testId, (err == mips_Success) && (rd_v == 0), "Testing 0xFF & 0xEF == 0 when rd = 0");
 
 	//Test3 - Invalid instruction (Shift != 0) 
@@ -441,7 +395,7 @@ void test_mips_AND(mips_cpu_h state){
 	rs_v = 0x80000000;
 	rt_v = 0x80000000;
 	instr = R_type_instr(rs, rt, rd, 1, 36);
-	err = set_step_read(state, rs, rs_v, rt, rt_v, instr, rd, rd_v, no_regs_changed);
+	err = set_step_read(state, rs, rs_v, rt, rt_v, instr, rd, rd_v);
 	mips_test_end_test(testId, (err == mips_ExceptionInvalidInstruction), "Invalid instruction (Shift != 0) ");
 }
 
@@ -457,8 +411,7 @@ void test_mips_OR(mips_cpu_h state){
 	uint32_t rt_v = 3;
 	uint32_t rd_v;
 	uint32_t instr = R_type_instr(rs, rt, rd, 0, 37);
-	bool no_regs_changed;
-	mips_error err = set_step_read(state, rs, rs_v, rt, rt_v, instr, rd, rd_v, no_regs_changed);
+	mips_error err = set_step_read(state, rs, rs_v, rt, rt_v, instr, rd, rd_v);
 	mips_test_end_test(testId, (err == mips_Success) && (rd_v == 0xF), "Testing F | 3 == F");
 
 	//Test2 - Modify $0
@@ -469,7 +422,7 @@ void test_mips_OR(mips_cpu_h state){
 	rs_v = 0xFF;
 	rt_v = 0xEF;
 	instr = R_type_instr(rs, rt, rd, 0, 37);
-	err = set_step_read(state, rs, rs_v, rt, rt_v, instr, rd, rd_v, no_regs_changed);
+	err = set_step_read(state, rs, rs_v, rt, rt_v, instr, rd, rd_v);
 	mips_test_end_test(testId, (err == mips_Success) && (rd_v == 0), "Testing 0xFF | 0xEF == 0 when rd = 0");
 
 	//Test3 - Invalid instruction (Shift != 0) 
@@ -480,7 +433,7 @@ void test_mips_OR(mips_cpu_h state){
 	rs_v = 0x80000000;
 	rt_v = 0x80000000;
 	instr = R_type_instr(rs, rt, rd, 1, 37);
-	err = set_step_read(state, rs, rs_v, rt, rt_v, instr, rd, rd_v, no_regs_changed);
+	err = set_step_read(state, rs, rs_v, rt, rt_v, instr, rd, rd_v);
 	mips_test_end_test(testId, (err == mips_ExceptionInvalidInstruction), "Invalid instruction (Shift != 0) ");
 }
 
@@ -496,8 +449,7 @@ void test_mips_XOR(mips_cpu_h state){
 	uint32_t rt_v = 3;
 	uint32_t rd_v;
 	uint32_t instr = R_type_instr(rs, rt, rd, 0, 37);
-	bool no_regs_changed;
-	mips_error err = set_step_read(state, rs, rs_v, rt, rt_v, instr, rd, rd_v, no_regs_changed);
+	mips_error err = set_step_read(state, rs, rs_v, rt, rt_v, instr, rd, rd_v);
 	mips_test_end_test(testId, (err == mips_Success) && (rd_v == 12), "Testing F ^ 3 == b1100 (d12)");
 
 	//Test2 - Modify $0
@@ -508,7 +460,7 @@ void test_mips_XOR(mips_cpu_h state){
 	rs_v = 0xFF;
 	rt_v = 0xEF;
 	instr = R_type_instr(rs, rt, rd, 0, 37);
-	err = set_step_read(state, rs, rs_v, rt, rt_v, instr, rd, rd_v, no_regs_changed);
+	err = set_step_read(state, rs, rs_v, rt, rt_v, instr, rd, rd_v);
 	mips_test_end_test(testId, (err == mips_Success) && (rd_v == 0), "Testing 0xFF ^ 0xEF == 0 when rd = 0");
 
 	//Test3 - Invalid instruction (Shift != 0) 
@@ -519,6 +471,6 @@ void test_mips_XOR(mips_cpu_h state){
 	rs_v = 0x80000000;
 	rt_v = 0x80000000;
 	instr = R_type_instr(rs, rt, rd, 1, 37);
-	err = set_step_read(state, rs, rs_v, rt, rt_v, instr, rd, rd_v, no_regs_changed);
+	err = set_step_read(state, rs, rs_v, rt, rt_v, instr, rd, rd_v);
 	mips_test_end_test(testId, (err == mips_ExceptionInvalidInstruction), "Invalid instruction (Shift != 0) ");
 }

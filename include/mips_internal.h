@@ -30,7 +30,14 @@ struct mips_cpu_impl{
 	unsigned debug_level;
 	FILE* debug_out;
 
-	mips_cpu_impl(mips_mem_h mem) : mem_handle(mem), pc(0), /*pcN que valor??*/ LO(0), HI(0), debug_level(0), debug_out(NULL){
+	mips_cpu_impl(mips_mem_h mem) : 
+		mem_handle(mem), 
+		pc(0), 
+		pcN(4), 
+		LO(0), 
+		HI(0), 
+		debug_level(0), 
+		debug_out(NULL){
 		for (int i = 0; i <= 31; i++){
 			GPReg[i] = 0;
 		}
@@ -40,5 +47,7 @@ struct mips_cpu_impl{
 };
 
 uint32_t to_big_Endi(const uint8_t *pData);
+
+void to_small_Endi(const uint32_t Data, uint8_t* output);
 
 #endif

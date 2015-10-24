@@ -83,12 +83,6 @@ uint32_t to_big_Endi(const uint8_t *pData)
 		(((uint32_t)pData[3]) << 0);
 }
 
-void to_small_Endi(const uint32_t Data, uint8_t* output){
-	output[0] = (Data >> 24) & 0xFF;
-	output[1] = (Data >> 16) & 0xFF;
-	output[2] = (Data >> 8) & 0xFF;
-	output[3] = (Data >> 0) & 0xFF;
-}
 
 mips_error mips_cpu_step(mips_cpu_h state){
 	//Debug information

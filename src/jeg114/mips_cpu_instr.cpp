@@ -21,11 +21,25 @@ mips_error BGEZ(mips_cpu_h state, uint8_t rs, uint16_t imm){
 }
 
 mips_error BLTZAL(mips_cpu_h state, uint8_t rs, uint16_t imm){
-	return mips_Success;
+	if (!is_positive(state->GPReg[rs])){
+		//Sould this be with/without if?? CHECK SPECS
+		state->GPReg[31] = state->pc + 8;
+		return state->advPC(sign_extend(imm) << 2);
+	}
+	else{
+		return state->advPC(1);
+	}
 }
 
 mips_error BGEZAL(mips_cpu_h state, uint8_t rs, uint16_t imm){
-	return mips_Success;
+	if (is_positive(state->GPReg[rs]) && state->GPReg[rs]!=0){
+		//Sould this be with/without if?? CHECK SPECS
+		state->GPReg[31] = state->pc + 8;
+		return state->advPC(sign_extend(imm) << 2);
+	}
+	else{
+		return state->advPC(1);
+	}
 }
 
 mips_error BEQ(mips_cpu_h state, uint8_t rs, uint8_t rt, uint16_t imm){
@@ -47,11 +61,29 @@ mips_error BNE(mips_cpu_h state, uint8_t rs, uint8_t rt, uint16_t imm){
 }
 
 mips_error BLEZ(mips_cpu_h state, uint8_t rs, uint8_t rt, uint16_t imm){
-	return mips_Success;
+	if (state->GPReg[rt] != 0){
+		return mips_ExceptionInvalidInstruction;
+	}
+	//Equal to zero, or smaller than zero (bit32 == 1)
+	if ((state->GPReg[rs] == 0) || is_positive(state->GPReg[rs])){
+		return state->advPC(sign_extend(imm) << 2);
+	}
+	else{
+		return state->advPC(1);
+	}
 }
 
 mips_error BGTZ(mips_cpu_h state, uint8_t rs, uint8_t rt, uint16_t imm){
-	return mips_Success;
+	if (state->GPReg[rt] != 0){
+		return mips_ExceptionInvalidInstruction;
+	}
+	//Not Equal to zero, and smaller than zero (bit32 == 0)
+	if (bigger_than(state->GPReg[rs], 0)){
+		return state->advPC(sign_extend(imm) << 2);
+	}
+	else{
+		return state->advPC(1);
+	}
 }
 
 mips_error ADDI(mips_cpu_h state, uint8_t rs, uint8_t rt, uint16_t imm){
@@ -82,11 +114,13 @@ mips_error ADDIU(mips_cpu_h state, uint8_t rs, uint8_t rt, uint16_t imm){
 }
 
 mips_error SLTI(mips_cpu_h state, uint8_t rs, uint8_t rt, uint16_t imm){
-	return mips_Success;
+	state->GPReg[rt] = bigger_than(sign_extend(imm), state->GPReg[rs]);
+	return state->advPC(1);
 }
 
 mips_error SLTIU(mips_cpu_h state, uint8_t rs, uint8_t rt, uint16_t imm){
-	return mips_Success;
+	state->GPReg[rt] = sign_extend(imm) > state->GPReg[rs];
+	return state->advPC(1);
 }
 
 mips_error ANDI(mips_cpu_h state, uint8_t rs, uint8_t rt, uint16_t imm){
@@ -127,11 +161,40 @@ mips_error LUI(mips_cpu_h state, uint8_t rs, uint8_t rt, uint16_t imm){
 }
 
 mips_error LB(mips_cpu_h state, uint8_t rs, uint8_t rt, uint16_t imm){
-	return mips_Success;
+	uint32_t address = state->GPReg[rs] + sign_extend(imm);
+	uint32_t byte_adress = address & 0x3;
+	address = address & 0xFFFFFFFC;
+	uint8_t buffer[4];
+	mips_error err = mips_mem_read(state->mem_handle, address, 4, buffer);
+
+	if (err != mips_Success){
+		return err;
+	}
+
+	uint32_t read = (to_big_Endi(buffer) >> (byte_adress * 8)) & 0xFF;
+	state->GPReg[rt] = sign_extend8((uint8_t)read);
+
+	return state->advPC(1);
 }
 
 mips_error LH(mips_cpu_h state, uint8_t rs, uint8_t rt, uint16_t imm){
-	return mips_Success;
+	uint32_t address = state->GPReg[rs] + sign_extend(imm);
+	if ((address >> 31) > 0){
+		return mips_ExceptionInvalidAlignment;
+	}
+	bool top_half = address >> 1 & 0x1;
+	address = address & 0xFFFFFFFC;
+	uint8_t buffer[4];
+	mips_error err = mips_mem_read(state->mem_handle, address, 4, buffer);
+
+	if (err != mips_Success){
+		return err;
+	}
+
+	uint32_t read = (to_big_Endi(buffer) >> (top_half * 16)) & 0xFFFF;
+	state->GPReg[rt] = sign_extend((uint16_t)read);
+
+	return state->advPC(1);
 }
 
 mips_error LWL(mips_cpu_h state, uint8_t rs, uint8_t rt, uint16_t imm){
@@ -158,11 +221,38 @@ mips_error LW(mips_cpu_h state, uint8_t rs, uint8_t rt, uint16_t imm){
 }
 
 mips_error LBU(mips_cpu_h state, uint8_t rs, uint8_t rt, uint16_t imm){
-	return mips_Success;
+	uint32_t address = state->GPReg[rs] + sign_extend(imm);
+	uint32_t byte_adress = address & 0x3;
+	address = address & 0xFFFFFFFC;
+	uint8_t buffer[4];
+	mips_error err = mips_mem_read(state->mem_handle, address, 4, buffer);
+
+	if (err != mips_Success){
+		return err;
+	}
+
+	state->GPReg[rt] = (to_big_Endi(buffer) >> (byte_adress * 8)) & 0xFF;
+
+	return state->advPC(1);
 }
 
 mips_error LHU(mips_cpu_h state, uint8_t rs, uint8_t rt, uint16_t imm){
-	return mips_Success;
+	uint32_t address = state->GPReg[rs] + sign_extend(imm);
+	if ((address >> 31) > 0){
+		return mips_ExceptionInvalidAlignment;
+	}
+	bool top_half = address >> 1 & 0x1;
+	address = address & 0xFFFFFFFC;
+	uint8_t buffer[4];
+	mips_error err = mips_mem_read(state->mem_handle, address, 4, buffer);
+
+	if (err != mips_Success){
+		return err;
+	}
+
+	state->GPReg[rt] = (to_big_Endi(buffer) >> (top_half * 16)) & 0xFFFF;
+
+	return state->advPC(1);
 }
 
 mips_error LWR(mips_cpu_h state, uint8_t rs, uint8_t rt, uint16_t imm){
@@ -170,11 +260,34 @@ mips_error LWR(mips_cpu_h state, uint8_t rs, uint8_t rt, uint16_t imm){
 }
 
 mips_error SB(mips_cpu_h state, uint8_t rs, uint8_t rt, uint16_t imm){
-	return mips_Success;
+	uint32_t address = state->GPReg[rs] + sign_extend(imm);
+	uint32_t byte_adress = address & 0x3;
+	address = address & 0xFFFFFFFC;
+	uint32_t value = state->GPReg[rt] & (0xFF << (byte_adress * 8));
+	mips_error err = mips_mem_read(state->mem_handle, address, 4, (uint8_t*)value);
+
+	if (err != mips_Success){
+		return err;
+	}
+
+	return state->advPC(1);
 }
 
 mips_error SH(mips_cpu_h state, uint8_t rs, uint8_t rt, uint16_t imm){
-	return mips_Success;
+	uint32_t address = state->GPReg[rs] + sign_extend(imm);
+	if ((address >> 31) > 0){
+		return mips_ExceptionInvalidAlignment;
+	}
+	bool top_half = address >> 1 & 0x1;
+	address = address & 0xFFFFFFFC;
+	uint32_t value = state->GPReg[rt] & (0xFFFF << (top_half * 16));
+	mips_error err = mips_mem_read(state->mem_handle, address, 4, (uint8_t*)value);
+
+	if (err != mips_Success){
+		return err;
+	}
+
+	return state->advPC(1);
 }
 
 mips_error SW(mips_cpu_h state, uint8_t rs, uint8_t rt, uint16_t imm){
@@ -276,8 +389,8 @@ mips_error SRAV(mips_cpu_h state, uint8_t rs, uint8_t rt, uint8_t rd, uint8_t sa
 	}
 	else if (rd != 0){
 		uint32_t shift = rt & 0x0000001F;
-		if ((state->GPReg[rd] >> 31) == 1){
-			for (int i = 0; i < shift; i++){
+		if (!is_positive(state->GPReg[rd])){
+			for (unsigned i = 0; i < shift; i++){
 				state->GPReg[rd] = state->GPReg[rd] >> 1;
 				state->GPReg[rd] = state->GPReg[rd] | 0x80000000;
 			}
@@ -290,7 +403,14 @@ mips_error SRAV(mips_cpu_h state, uint8_t rs, uint8_t rt, uint8_t rd, uint8_t sa
 }
 
 mips_error JR(mips_cpu_h state, uint8_t rs, uint8_t rt, uint8_t rd, uint8_t sa){
+	if ((rt != 0) || (rd != 0) || (sa!=0)){
+		return mips_ExceptionInvalidInstruction;
+	}
+
+	state->pc = state->pcN;
+	state->pcN = state->GPReg[rs];
 	return mips_Success;
+
 }
 
 mips_error JALR(mips_cpu_h state, uint8_t rs, uint8_t rt, uint8_t rd, uint8_t sa){
@@ -434,17 +554,7 @@ mips_error SLT(mips_cpu_h state, uint8_t rs, uint8_t rt, uint8_t rd, uint8_t sa)
 		return mips_ExceptionInvalidInstruction;
 	}
 	if (rd != 0){
-		//Both positive/negative , unsigned compare
-		if (is_positive(state->GPReg[rs]) && is_positive(state->GPReg[rt]) ||
-			!is_positive(state->GPReg[rs]) && !is_positive(state->GPReg[rt])
-			){
-			state->GPReg[rd] = state->GPReg[rs] < state->GPReg[rt];
-		}
-		//Alternate signs -> unsigned compare is wrong -> opposite
-		else if (!is_positive(state->GPReg[rs]) && is_positive(state->GPReg[rt]) ||
-			is_positive(state->GPReg[rs]) && !is_positive(state->GPReg[rt])){
-			state->GPReg[rd] = state->GPReg[rs] > state->GPReg[rt];
-		}
+		state->GPReg[rd] = bigger_than(state->GPReg[rt], state->GPReg[rs]);
 	}
 	return state->advPC(1);
 }
@@ -462,7 +572,17 @@ mips_error SLTU(mips_cpu_h state, uint8_t rs, uint8_t rt, uint8_t rd, uint8_t sa
 uint32_t sign_extend(uint16_t in){
 	uint32_t tmp = in;
 	if ((in >> 15) == 1){
-		return(tmp | 0xFFFF);
+		return(tmp | 0xFFFF0000);
+	}
+	else{
+		return tmp;
+	}
+}
+
+uint32_t sign_extend8(uint8_t in){
+	uint32_t tmp = in;
+	if ((in >> 7) == 1){
+		return(tmp | 0xFFFFFF00);
 	}
 	else{
 		return tmp;
@@ -471,4 +591,17 @@ uint32_t sign_extend(uint16_t in){
 
 bool is_positive(uint32_t in){
 	return (in >> 31) == 0;
+}
+
+bool bigger_than(uint32_t a, uint32_t b){
+	//Both positive/negative , unsigned compare
+	if (is_positive(a) && is_positive(b) ||
+		!is_positive(a) && !is_positive(b)
+		){
+		return a > b;
+	}
+	//Alternate signs -> unsigned compare is wrong -> opposite
+	else {
+		return a < b;
+	}
 }

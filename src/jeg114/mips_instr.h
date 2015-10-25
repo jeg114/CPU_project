@@ -166,9 +166,17 @@ mips_error SLT(mips_cpu_h state, uint8_t rs, uint8_t rt, uint8_t rd, uint8_t sa)
 //SLTU Set on less than unsigned  Type: R Difficulty: 1 X Opcode: 2B 
 mips_error SLTU(mips_cpu_h state, uint8_t rs, uint8_t rt, uint8_t rd, uint8_t sa);
 
+//Sign extends uint16_t to uint32_t
 uint32_t sign_extend(uint16_t in);
 
+//Sign extends uint16_t to uint32_t
+uint32_t sign_extend8(uint8_t in);
+
+//Returns true if in bit32 == 0;
 bool is_positive(uint32_t in);
+
+//Returns true if (signed) a > b
+bool bigger_than(uint32_t a, uint32_t b);
 
 
 #ifdef __cplusplus

@@ -48,6 +48,4 @@ struct mips_cpu_impl{
 
 uint32_t to_big_Endi(const uint8_t *pData);
 
-void to_small_Endi(const uint32_t Data, uint8_t* output);
-
 #endif

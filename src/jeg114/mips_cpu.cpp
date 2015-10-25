@@ -83,7 +83,6 @@ uint32_t to_big_Endi(const uint8_t *pData)
 		(((uint32_t)pData[3]) << 0);
 }
 
-
 mips_error mips_cpu_step(mips_cpu_h state){
 	//Debug information
 	if (state->debug_level >= 1){ fprintf(state->debug_out, "\n----------- NEW STEP -------- \nPC: 0x%08x \n", state->pc); }

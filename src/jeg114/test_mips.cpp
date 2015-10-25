@@ -84,6 +84,7 @@ int main(){
 	test_mips_SUBU(cpu, mem);
 	test_mips_AND(cpu,mem);
 	test_mips_OR(cpu, mem);
+	test_mips_XOR(cpu, mem);
 	test_mips_J(cpu,mem);
 	mips_test_end_suite();
 
@@ -476,7 +477,7 @@ void test_mips_XOR(mips_cpu_h state, mips_mem_h mem){
 	uint32_t rs_v = 0xF;
 	uint32_t rt_v = 3;
 	uint32_t rd_v;
-	uint32_t instr = R_type_instr(rs, rt, rd, 0, 37);
+	uint32_t instr = R_type_instr(rs, rt, rd, 0, 38);
 	mips_error err = set_step_read(state, rs, rs_v, rt, rt_v, instr, rd, rd_v, mem);
 	mips_test_end_test(testId, (err == mips_Success) && (rd_v == 12), "Testing F ^ 3 == b1100 (d12)");
 
@@ -487,7 +488,7 @@ void test_mips_XOR(mips_cpu_h state, mips_mem_h mem){
 	rd = 0;
 	rs_v = 0xFF;
 	rt_v = 0xEF;
-	instr = R_type_instr(rs, rt, rd, 0, 37);
+	instr = R_type_instr(rs, rt, rd, 0, 38);
 	err = set_step_read(state, rs, rs_v, rt, rt_v, instr, rd, rd_v, mem);
 	mips_test_end_test(testId, (err == mips_Success) && (rd_v == 0), "Testing 0xFF ^ 0xEF == 0 when rd = 0");
 
@@ -498,7 +499,7 @@ void test_mips_XOR(mips_cpu_h state, mips_mem_h mem){
 	rd = 3;
 	rs_v = 0x80000000;
 	rt_v = 0x80000000;
-	instr = R_type_instr(rs, rt, rd, 1, 37);
+	instr = R_type_instr(rs, rt, rd, 1, 38);
 	err = set_step_read(state, rs, rs_v, rt, rt_v, instr, rd, rd_v, mem);
 	mips_test_end_test(testId, (err == mips_ExceptionInvalidInstruction), "Invalid instruction (Shift != 0) ");
 }

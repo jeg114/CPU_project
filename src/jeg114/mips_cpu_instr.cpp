@@ -87,7 +87,7 @@ mips_error BGTZ(mips_cpu_h state, uint8_t rs, uint8_t rt, uint16_t imm){
 }
 
 mips_error ADDI(mips_cpu_h state, uint8_t rs, uint8_t rt, uint16_t imm){
-	uint32_t tmp = state->GPReg[rs] + imm;
+	uint32_t tmp = state->GPReg[rs] + sign_extend(imm);
 
 	//Overflow ocurrs only if operands have same sign
 	if (is_positive(state->GPReg[rs]) && is_positive(sign_extend(imm))){
@@ -108,7 +108,7 @@ mips_error ADDI(mips_cpu_h state, uint8_t rs, uint8_t rt, uint16_t imm){
 
 mips_error ADDIU(mips_cpu_h state, uint8_t rs, uint8_t rt, uint16_t imm){
 	if (rt != 0){
-		state->GPReg[rt] = state->GPReg[rs] + imm;
+		state->GPReg[rt] = state->GPReg[rs] + sign_extend(imm);
 	}
 	return state->advPC(1);
 }
@@ -491,12 +491,12 @@ mips_error SUB(mips_cpu_h state, uint8_t rs, uint8_t rt, uint8_t rd, uint8_t sa)
 
 	//Overflow ocurrs only if operands have same sign (after negative applied to second operand)
 	if (is_positive(state->GPReg[rs]) && !is_positive(state->GPReg[rt])){
-		if (!is_positive(state->GPReg[rs])){
+		if (!is_positive(tmp)){
 			return mips_ExceptionArithmeticOverflow;
 		}
 	}
 	else if (!is_positive(state->GPReg[rs]) && is_positive(state->GPReg[rt])){
-		if (is_positive(state->GPReg[rs])){
+		if (is_positive(tmp)){
 			return mips_ExceptionArithmeticOverflow;
 		}
 	}

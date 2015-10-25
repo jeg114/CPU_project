@@ -310,16 +310,19 @@ mips_error mips_cpu_step(mips_cpu_h state){
 			}
 
 		}
-		else if(opcode >> 2 != 2){	//Opcode 0010XX reserved for coprocessor instructions
+		else if(((opcode >> 3)&0x1) != 2){	//Opcode 0010XX reserved for coprocessor instructions
 			//I - Type Instr
 			/*
 			--- Opcode --- rs --- rt --- immediate ---
 			--- 6 Bits ---  5 ---  5 ---     16    ---
 			*/
 			if (state->debug_level >= 2){ fprintf(state->debug_out, "Type: I\n", instr); }
+
 			uint8_t rs = (instr >> 21) & 0x1f;
 			uint8_t rt = (instr >> 16) & 0x1f;
 			uint16_t imm = instr & 0xffff;
+
+			if (state->debug_level >= 3){ fprintf(state->debug_out, "Op: 0x%2x    rs: %i   rt: %i   imm: 0x%4x  \n", opcode, rs, rt, imm); }
 
 			switch (opcode){
 			case 1:

@@ -114,12 +114,16 @@ mips_error ADDIU(mips_cpu_h state, uint8_t rs, uint8_t rt, uint16_t imm){
 }
 
 mips_error SLTI(mips_cpu_h state, uint8_t rs, uint8_t rt, uint16_t imm){
-	state->GPReg[rt] = bigger_than(sign_extend(imm), state->GPReg[rs]);
+	if (rt != 0){
+		state->GPReg[rt] = bigger_than(sign_extend(imm), state->GPReg[rs]);
+	}
 	return state->advPC(1);
 }
 
 mips_error SLTIU(mips_cpu_h state, uint8_t rs, uint8_t rt, uint16_t imm){
-	state->GPReg[rt] = sign_extend(imm) > state->GPReg[rs];
+	if (rt != 0){
+		state->GPReg[rt] = sign_extend(imm) > state->GPReg[rs];
+	}
 	return state->advPC(1);
 }
 
@@ -370,7 +374,14 @@ mips_error SRA(mips_cpu_h state, uint8_t rs, uint8_t rt, uint8_t rd, uint8_t sa)
 }
 
 mips_error SLLV(mips_cpu_h state, uint8_t rs, uint8_t rt, uint8_t rd, uint8_t sa){
-	return mips_Success;
+	if (sa != 0){
+		return mips_ExceptionInvalidInstruction;
+	}
+	else if (rd != 0){
+		uint32_t tmp = state->GPReg[rs] & 0x0000001F;
+		state->GPReg[rd] = state->GPReg[rt] << tmp;
+	}
+	return state->advPC(1);
 }
 
 mips_error SRLV(mips_cpu_h state, uint8_t rs, uint8_t rt, uint8_t rd, uint8_t sa){
@@ -378,8 +389,8 @@ mips_error SRLV(mips_cpu_h state, uint8_t rs, uint8_t rt, uint8_t rd, uint8_t sa
 		return mips_ExceptionInvalidInstruction;
 	}
 	else if (rd != 0){
-		uint32_t tmp = rs & 0x0000001F;
-		state->GPReg[rd] = state->GPReg[rd] >> tmp;
+		uint32_t tmp = state->GPReg[rs] & 0x0000001F;
+		state->GPReg[rd] = state->GPReg[rt] >> tmp;
 	}
 	return state->advPC(1);
 }
@@ -389,15 +400,16 @@ mips_error SRAV(mips_cpu_h state, uint8_t rs, uint8_t rt, uint8_t rd, uint8_t sa
 		return mips_ExceptionInvalidInstruction;
 	}
 	else if (rd != 0){
-		uint32_t shift = rt & 0x0000001F;
-		if (!is_positive(state->GPReg[rd])){
+		uint32_t shift = state->GPReg[rs] & 0x0000001F;
+		if (!is_positive(state->GPReg[rt])){
+			state->GPReg[rd] = state->GPReg[rt];
 			for (unsigned i = 0; i < shift; i++){
 				state->GPReg[rd] = state->GPReg[rd] >> 1;
 				state->GPReg[rd] = state->GPReg[rd] | 0x80000000;
 			}
 		}
 		else{
-			state->GPReg[rd] = state->GPReg[rd] >> shift;
+			state->GPReg[rd] = state->GPReg[rt] >> shift;
 		}
 	}
 	return state->advPC(1);

@@ -335,7 +335,7 @@ mips_error SLL(mips_cpu_h state, uint8_t rs, uint8_t rt, uint8_t rd, uint8_t sa)
 		return mips_ExceptionInvalidInstruction;
 	}
 	else if (rd != 0){
-		state->GPReg[rd] = state->GPReg[rd] << sa;
+		state->GPReg[rd] = state->GPReg[rt] << sa;
 	}
 	return state->advPC(1);
 }
@@ -345,7 +345,7 @@ mips_error SRL(mips_cpu_h state, uint8_t rs, uint8_t rt, uint8_t rd, uint8_t sa)
 		return mips_ExceptionInvalidInstruction;
 	}
 	else if (rd != 0){
-		state->GPReg[rd] = state->GPReg[rd] >> sa;
+		state->GPReg[rd] = state->GPReg[rt] >> sa;
 	}
 	return state->advPC(1);
 }
@@ -355,14 +355,15 @@ mips_error SRA(mips_cpu_h state, uint8_t rs, uint8_t rt, uint8_t rd, uint8_t sa)
 		return mips_ExceptionInvalidInstruction;
 	}
 	else if (rd != 0){
-		if ((state->GPReg[rd] >> 31) == 1){
+		if (!is_positive(state->GPReg[rt])){
+			state->GPReg[rd] = state->GPReg[rt];
 			for (int i = 0; i < sa; i++){
 				state->GPReg[rd] = state->GPReg[rd] >> 1;
 				state->GPReg[rd] = state->GPReg[rd] | 0x80000000;
 			}
 		}
 		else{
-			state->GPReg[rd] = state->GPReg[rd] >> sa;
+			state->GPReg[rd] = state->GPReg[rt] >> sa;
 		}
 	}
 	return state->advPC(1);

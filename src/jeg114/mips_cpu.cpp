@@ -44,7 +44,9 @@ mips_error mips_cpu_set_register(mips_cpu_h state, unsigned index, uint32_t valu
 		return mips_ErrorInvalidArgument;
 	}
 	else{
-		state->GPReg[index] = value;
+		if (index != 0){
+			state->GPReg[index] = value;
+		}
 		return mips_Success;
 	}
 }

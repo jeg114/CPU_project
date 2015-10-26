@@ -47,6 +47,10 @@ void test_mips_ANDI(mips_cpu_h state, mips_mem_h mem);
 void test_mips_ORI(mips_cpu_h state, mips_mem_h mem);
 void test_mips_XORI(mips_cpu_h state, mips_mem_h mem);
 void test_mips_SLTU(mips_cpu_h state, mips_mem_h mem);
+void test_mips_SLL(mips_cpu_h state, mips_mem_h mem);
+void test_mips_SRL(mips_cpu_h state, mips_mem_h mem);
+void test_mips_SRA(mips_cpu_h state, mips_mem_h mem);
+void test_mips_LUI(mips_cpu_h state, mips_mem_h mem);
 void test_mips_J(mips_cpu_h state, mips_mem_h mem);
 
 mips_error set_step_read(mips_cpu_h state,
@@ -83,26 +87,30 @@ int main(){
 	//	}
 	//}
 
-	debug = 3;
+	debug = 0;
 	file_h = stdout;
 
 	mips_cpu_set_debug_level(cpu, debug, file_h);
 
 	mips_test_begin_suite();
 	test_mips_SLTU(cpu, mem);
-	//test_mips_ADD(cpu, mem);
-	//test_mips_ADDI(cpu, mem);
-	//test_mips_ADDIU(cpu, mem);
-	//test_mips_ANDI(cpu, mem);
-	//test_mips_ORI(cpu, mem);
-	//test_mips_XORI(cpu, mem);
-	//test_mips_SUB(cpu, mem);
-	//test_mips_ADDU(cpu, mem);
-	//test_mips_SUBU(cpu, mem);
-	//test_mips_AND(cpu,mem);
-	//test_mips_OR(cpu, mem);
-	//test_mips_XOR(cpu, mem);
-	//test_mips_J(cpu,mem);
+	test_mips_LUI(cpu, mem);
+	test_mips_SLL(cpu, mem);
+	test_mips_SRL(cpu, mem);
+	test_mips_SRA(cpu, mem);
+	test_mips_ADD(cpu, mem);
+	test_mips_ADDI(cpu, mem);
+	test_mips_ADDIU(cpu, mem);
+	test_mips_ANDI(cpu, mem);
+	test_mips_ORI(cpu, mem);
+	test_mips_XORI(cpu, mem);
+	test_mips_SUB(cpu, mem);
+	test_mips_ADDU(cpu, mem);
+	test_mips_SUBU(cpu, mem);
+	test_mips_AND(cpu,mem);
+	test_mips_OR(cpu, mem);
+	test_mips_XOR(cpu, mem);
+	test_mips_J(cpu,mem);
 	mips_test_end_suite();
 
 	cin.get();
@@ -298,7 +306,7 @@ void test_mips_ADD(mips_cpu_h state, mips_mem_h mem){
 }
 
 void test_mips_ADDI(mips_cpu_h state, mips_mem_h mem){
-	//ADDI - I-type - Function 0x8 / d8
+	//ADDI - I-type - Opcode 0x8 / d8
 
 	//Test1 - Functionality
 	int testId = mips_test_begin_test("ADDI");
@@ -346,7 +354,7 @@ void test_mips_ADDI(mips_cpu_h state, mips_mem_h mem){
 }
 
 void test_mips_ADDIU(mips_cpu_h state, mips_mem_h mem){
-	//ADDIU - I-type - Function 0x8 / d8
+	//ADDIU - I-type - Opcode 0x8 / d8
 
 	//Test1 - Functionality
 	int testId = mips_test_begin_test("ADDIU");
@@ -617,7 +625,7 @@ void test_mips_AND(mips_cpu_h state, mips_mem_h mem){
 }
 
 void test_mips_ANDI(mips_cpu_h state, mips_mem_h mem){
-	//ANDI - I-type - Function 0xC / d12
+	//ANDI - I-type - Opcode 0xC / d12
 
 	//Test1 - Functionality
 	int testId = mips_test_begin_test("ANDI");
@@ -680,7 +688,7 @@ void test_mips_OR(mips_cpu_h state, mips_mem_h mem){
 }
 
 void test_mips_ORI(mips_cpu_h state, mips_mem_h mem){
-	//ORI - R-type - Function 0xD / d12
+	//ORI - I-type - Opcode 0xD / d12
 
 	//Test1 - Functionality
 	int testId = mips_test_begin_test("ORI");
@@ -705,7 +713,7 @@ void test_mips_ORI(mips_cpu_h state, mips_mem_h mem){
 }
 
 void test_mips_XORI(mips_cpu_h state, mips_mem_h mem){
-	//XORI - R-type - Function 0xE / d14
+	//XORI - I-type - Opcode 0xE / d14
 
 	//Test1 - Functionality
 	int testId = mips_test_begin_test("XORI");
@@ -817,6 +825,177 @@ void test_mips_SLTU(mips_cpu_h state, mips_mem_h mem){
 	mips_test_end_test(testId, (err == mips_ExceptionInvalidInstruction), "Invalid instruction (Shift != 0) ");
 }
 
+void test_mips_LUI(mips_cpu_h state, mips_mem_h mem){
+	//LUI - I-type - Opcode 0xF / d15
+
+	//Test1 - Functionality
+	int testId = mips_test_begin_test("LUI");
+	uint32_t rs = 0;
+	uint32_t rt = 6;
+	uint32_t rt_v;
+	uint32_t rs_v = 3;
+	uint32_t imm = 0xCE;
+	uint32_t instr = I_type_instr(15, rs, rt, imm);
+	mips_error err = set_step_read(state, rs, rs_v, rt, 0xFFFF, instr, rt, rt_v, mem);
+	mips_test_end_test(testId, (err == mips_Success) && (rt_v == 0x00CE0000), "Testing LUI(0xCE) == 0x00CE0000");
+
+	//Test2 - Modify $0
+	testId = mips_test_begin_test("LUI");
+	rs = 0;
+	rt = 0;
+	rs_v = 0xF;
+	imm = 3;
+	instr = I_type_instr(15, rs, rt, imm);
+	err = set_step_read(state, rs, rs_v, 33, 0, instr, rt, rt_v, mem);
+	mips_test_end_test(testId, (err == mips_Success) && (rt_v == 0), "Testing F ^ 3 == 0 when rd = 0");
+
+	//Test2 - Rs != 0 -> invalid instruction
+	testId = mips_test_begin_test("LUI");
+	rs = 5;
+	rt = 1;
+	rs_v = 0xF;
+	imm = 3;
+	instr = I_type_instr(15, rs, rt, imm);
+	err = set_step_read(state, rs, rs_v, rt, 1, instr, rt, rt_v, mem);
+	mips_test_end_test(testId, (err == mips_ExceptionInvalidInstruction) && (rt_v == 1), "Testing F ^ 3 == 0 when rd = 0");
+}
+
+void test_mips_SLL(mips_cpu_h state, mips_mem_h mem){
+	//SLL - R-type - Function 0x0 / d0
+
+	//Test1 - Functionality
+	int testId = mips_test_begin_test("SLL");
+	uint32_t rs = 0;
+	uint32_t rt = 6;
+	uint32_t rd = 7;
+	uint32_t sa = 2;
+	uint32_t rt_v = 1;
+	uint32_t rd_v;
+	uint32_t instr = R_type_instr(rs, rt, rd, sa, 0);
+	mips_error err = set_step_read(state, rs, 0, rt, rt_v, instr, rd, rd_v, mem);
+	mips_test_end_test(testId, (err == mips_Success) && (rd_v == 4), "Testing 1<<2 == 4");
+
+	//Test2 - Modify $0
+	testId = mips_test_begin_test("SLL");
+	rs = 0;
+	rt = 6;
+	rd = 0;
+	sa = 1;
+	rt_v = 2;
+	instr = R_type_instr(rs, rt, rd, sa, 0);
+	err = set_step_read(state, rs, 0, rt, rt_v, instr, rd, rd_v, mem);
+	mips_test_end_test(testId, (err == mips_Success) && (rd_v == 0), "Testing 1<<2 == 0 when rd = 0");
+
+	//Test5 - Invalid instruction (Rs != 0) 
+	testId = mips_test_begin_test("SLL");
+	rs = 5;
+	rt = 6;
+	rd = 3;
+	sa = 1;
+	rt_v = 0x80000000;
+	instr = R_type_instr(rs, rt, rd, sa, 0);
+	err = set_step_read(state, 33, 0, rt, rt_v, instr, rd, rd_v, mem);
+	mips_test_end_test(testId, (err == mips_ExceptionInvalidInstruction), "Invalid instruction (Rs != 0) ");
+}
+
+void test_mips_SRL(mips_cpu_h state, mips_mem_h mem){
+	//SRL - R-type - Function 0x2 / d2
+
+	//Test1 - Functionality
+	int testId = mips_test_begin_test("SRL");
+	uint32_t rs = 0;
+	uint32_t rt = 6;
+	uint32_t rd = 7;
+	uint32_t sa = 2;
+	uint32_t rt_v = 0xF;
+	uint32_t rd_v;
+	uint32_t instr = R_type_instr(rs, rt, rd, sa, 2);
+	mips_error err = set_step_read(state, rs, 0, rt, rt_v, instr, rd, rd_v, mem);
+	mips_test_end_test(testId, (err == mips_Success) && (rd_v == 3), "Testing 0xF>>2 == 3");
+
+	//Test2 - Modify $0
+	testId = mips_test_begin_test("SRL");
+	rs = 0;
+	rt = 6;
+	rd = 0;
+	sa = 1;
+	rt_v = 0xF;
+	instr = R_type_instr(rs, rt, rd, sa, 2);
+	err = set_step_read(state, rs, 0, rt, rt_v, instr, rd, rd_v, mem);
+	mips_test_end_test(testId, (err == mips_Success) && (rd_v == 0), "Testing 0xF>>2 == 0 when rd = 0");
+
+	//Test3 - Invalid instruction (Rs != 0) 
+	testId = mips_test_begin_test("SRL");
+	rs = 5;
+	rt = 6;
+	rd = 3;
+	sa = 1;
+	rt_v = 0x80000000;
+	instr = R_type_instr(rs, rt, rd, sa, 2);
+	err = set_step_read(state, 33, 0, rt, rt_v, instr, rd, rd_v, mem);
+	mips_test_end_test(testId, (err == mips_ExceptionInvalidInstruction), "Invalid instruction (Rs != 0) ");
+
+	//Test4 - No sign extend (Logical)
+	testId = mips_test_begin_test("SRL");
+	rs = 0;
+	rt = 6;
+	rd = 3;
+	sa = 1;
+	rt_v = 0x80000000;
+	instr = R_type_instr(rs, rt, rd, sa, 2);
+	err = set_step_read(state, 33, 0, rt, rt_v, instr, rd, rd_v, mem);
+	mips_test_end_test(testId, (err == mips_Success)&&(rd_v==0x40000000), "0x800000000 >> 1 == 0x40000000 ");
+}
+
+void test_mips_SRA(mips_cpu_h state, mips_mem_h mem){
+	//SRA - R-type - Function 0x3 / d3
+
+	//Test1 - Functionality
+	int testId = mips_test_begin_test("SRA");
+	uint32_t rs = 0;
+	uint32_t rt = 6;
+	uint32_t rd = 7;
+	uint32_t sa = 3;
+	uint32_t rt_v = 0xF;
+	uint32_t rd_v;
+	uint32_t instr = R_type_instr(rs, rt, rd, sa, 3);
+	mips_error err = set_step_read(state, rs, 0, rt, rt_v, instr, rd, rd_v, mem);
+	mips_test_end_test(testId, (err == mips_Success) && (rd_v == 1), "Testing 0xF>>3 == 1");
+
+	//Test2 - Modify $0
+	testId = mips_test_begin_test("SRA");
+	rs = 0;
+	rt = 6;
+	rd = 0;
+	sa = 1;
+	rt_v = 0xF;
+	instr = R_type_instr(rs, rt, rd, sa, 3);
+	err = set_step_read(state, rs, 0, rt, rt_v, instr, rd, rd_v, mem);
+	mips_test_end_test(testId, (err == mips_Success) && (rd_v == 0), "Testing 0xF>>1 == 0 when rd = 0");
+
+	//Test3 - Invalid instruction (Rs != 0) 
+	testId = mips_test_begin_test("SRA");
+	rs = 5;
+	rt = 6;
+	rd = 3;
+	sa = 1;
+	rt_v = 0x80000000;
+	instr = R_type_instr(rs, rt, rd, sa, 3);
+	err = set_step_read(state, 33, 0, rt, rt_v, instr, rd, rd_v, mem);
+	mips_test_end_test(testId, (err == mips_ExceptionInvalidInstruction), "Invalid instruction (Rs != 0) ");
+
+	//Test4 - Sign extend
+	testId = mips_test_begin_test("SRA");
+	rs = 0;
+	rt = 6;
+	rd = 3;
+	sa = 3;
+	rt_v = 0x80000000;
+	instr = R_type_instr(rs, rt, rd, sa, 3);
+	err = set_step_read(state, 33, 0, rt, rt_v, instr, rd, rd_v, mem);
+	mips_test_end_test(testId, (err == mips_Success) && (rd_v == 0xF0000000), "0x800000000 >> 3 == 0xF0000000 ");
+}
+
 void test_mips_J(mips_cpu_h state, mips_mem_h mem){
 	//J - J-type - Opcode 0x2 / d2
 
@@ -852,3 +1031,4 @@ void to_small_Endi(const uint32_t Data, uint8_t* output){
 	output[2] = (Data >> 8) & 0xFF;
 	output[3] = (Data >> 0) & 0xFF;
 }
+

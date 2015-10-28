@@ -200,6 +200,20 @@ mips_error LH(mips_cpu_h state, uint8_t rs, uint8_t rt, uint16_t imm){
 }
 
 mips_error LWL(mips_cpu_h state, uint8_t rs, uint8_t rt, uint16_t imm){
+	uint32_t eff_addr = rt + sign_extend(imm);
+	uint32_t w_addr = eff_addr & 0xFFFFFFFC;
+	uint32_t byte_addr = eff_addr & 0x3;
+	uint8_t buffer[4];
+	mips_error mem_err = mips_mem_read(state->mem_handle, w_addr, 4, buffer);
+	if (mem_err != mips_Success){
+		return mem_err;
+	}
+
+	uint32_t align_w = to_big_Endi(buffer);
+	if (rt != 0){
+		state->GPReg[rt] = state->GPReg[rt] | (align_w << (byte_addr * 8));
+	}
+	
 	return mips_Success;
 }
 
@@ -258,6 +272,20 @@ mips_error LHU(mips_cpu_h state, uint8_t rs, uint8_t rt, uint16_t imm){
 }
 
 mips_error LWR(mips_cpu_h state, uint8_t rs, uint8_t rt, uint16_t imm){
+	uint32_t eff_addr = rt + sign_extend(imm);
+	uint32_t w_addr = eff_addr & 0xFFFFFFFC;
+	uint32_t byte_addr = eff_addr & 0x3;
+	uint8_t buffer[4];
+	mips_error mem_err = mips_mem_read(state->mem_handle, w_addr, 4, buffer);
+	if (mem_err != mips_Success){
+		return mem_err;
+	}
+
+	uint32_t align_w = to_big_Endi(buffer);
+	if (rt != 0){
+		state->GPReg[rt] = state->GPReg[rt] | (align_w >> (byte_addr * 8));
+	}
+
 	return mips_Success;
 }
 
@@ -452,7 +480,7 @@ mips_error MTHI(mips_cpu_h state, uint8_t rs, uint8_t rt, uint8_t rd, uint8_t sa
 	if (rd != 0 || rt != 0 || sa != 0){
 		return mips_ExceptionInvalidInstruction;
 	}
-	state-> HI = state->GPReg[rd];
+	state-> HI = state->GPReg[rs];
 	return state->advPC(1);
 }
 
@@ -470,7 +498,7 @@ mips_error MTLO(mips_cpu_h state, uint8_t rs, uint8_t rt, uint8_t rd, uint8_t sa
 	if (rd != 0 || rt != 0 || sa != 0){
 		return mips_ExceptionInvalidInstruction;
 	}
-	state->HI = state->GPReg[rd];
+	state->HI = state->GPReg[rs];
 	return state->advPC(1);
 }
 

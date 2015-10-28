@@ -4,7 +4,7 @@
 
 mips_error BLTZ(mips_cpu_h state, uint8_t rs, uint16_t imm){
 	if (!is_positive(state->GPReg[rs])){
-		return state->advPC(sign_extend(imm) << 2);
+		return state->advPC(sign_extend(imm));
 	}
 	else{
 		return state->advPC(1);
@@ -13,7 +13,7 @@ mips_error BLTZ(mips_cpu_h state, uint8_t rs, uint16_t imm){
 
 mips_error BGEZ(mips_cpu_h state, uint8_t rs, uint16_t imm){
 	if (is_positive(state->GPReg[rs])){
-		return state->advPC(sign_extend(imm) << 2);
+		return state->advPC(sign_extend(imm));
 	}
 	else{
 		return state->advPC(1);
@@ -21,10 +21,9 @@ mips_error BGEZ(mips_cpu_h state, uint8_t rs, uint16_t imm){
 }
 
 mips_error BLTZAL(mips_cpu_h state, uint8_t rs, uint16_t imm){
+	state->GPReg[31] = state->pc + 8;
 	if (!is_positive(state->GPReg[rs])){
-		//Sould this be with/without if?? CHECK SPECS
-		state->GPReg[31] = state->pc + 8;
-		return state->advPC(sign_extend(imm) << 2);
+		return state->advPC(sign_extend(imm));
 	}
 	else{
 		return state->advPC(1);
@@ -32,10 +31,9 @@ mips_error BLTZAL(mips_cpu_h state, uint8_t rs, uint16_t imm){
 }
 
 mips_error BGEZAL(mips_cpu_h state, uint8_t rs, uint16_t imm){
-	if (is_positive(state->GPReg[rs]) && state->GPReg[rs]!=0){
-		//Sould this be with/without if?? CHECK SPECS
-		state->GPReg[31] = state->pc + 8;
-		return state->advPC(sign_extend(imm) << 2);
+	state->GPReg[31] = state->pc + 8;
+	if (is_positive(state->GPReg[rs])){
+		return state->advPC(sign_extend(imm));
 	}
 	else{
 		return state->advPC(1);
@@ -44,7 +42,7 @@ mips_error BGEZAL(mips_cpu_h state, uint8_t rs, uint16_t imm){
 
 mips_error BEQ(mips_cpu_h state, uint8_t rs, uint8_t rt, uint16_t imm){
 	if (state->GPReg[rs] == state->GPReg[rt]){
-		return state->advPC(sign_extend(imm) << 2);
+		return state->advPC(sign_extend(imm));
 	}
 	else{
 		return state->advPC(1);
@@ -53,7 +51,7 @@ mips_error BEQ(mips_cpu_h state, uint8_t rs, uint8_t rt, uint16_t imm){
 
 mips_error BNE(mips_cpu_h state, uint8_t rs, uint8_t rt, uint16_t imm){
 	if (state->GPReg[rs] != state->GPReg[rt]){
-		return state->advPC(sign_extend(imm) << 2);
+		return state->advPC(sign_extend(imm));
 	}
 	else{
 		return state->advPC(1);
@@ -65,8 +63,8 @@ mips_error BLEZ(mips_cpu_h state, uint8_t rs, uint8_t rt, uint16_t imm){
 		return mips_ExceptionInvalidInstruction;
 	}
 	//Equal to zero, or smaller than zero (bit32 == 1)
-	if ((state->GPReg[rs] == 0) || is_positive(state->GPReg[rs])){
-		return state->advPC(sign_extend(imm) << 2);
+	if ((state->GPReg[rs] == 0) || !is_positive(state->GPReg[rs])){
+		return state->advPC(sign_extend(imm));
 	}
 	else{
 		return state->advPC(1);
@@ -79,7 +77,7 @@ mips_error BGTZ(mips_cpu_h state, uint8_t rs, uint8_t rt, uint16_t imm){
 	}
 	//Not Equal to zero, and smaller than zero (bit32 == 0)
 	if (bigger_than(state->GPReg[rs], 0)){
-		return state->advPC(sign_extend(imm) << 2);
+		return state->advPC(sign_extend(imm));
 	}
 	else{
 		return state->advPC(1);
@@ -416,8 +414,12 @@ mips_error SRAV(mips_cpu_h state, uint8_t rs, uint8_t rt, uint8_t rd, uint8_t sa
 }
 
 mips_error JR(mips_cpu_h state, uint8_t rs, uint8_t rt, uint8_t rd, uint8_t sa){
-	if ((rt != 0) || (rd != 0) || (sa!=0)){
+	if ((rt != 0) || (sa!=0)){
 		return mips_ExceptionInvalidInstruction;
+	}
+
+	if (rd != 0){
+		state->GPReg[rd] = state->pc + 8;
 	}
 
 	state->pc = state->pcN;
@@ -427,39 +429,126 @@ mips_error JR(mips_cpu_h state, uint8_t rs, uint8_t rt, uint8_t rd, uint8_t sa){
 }
 
 mips_error JALR(mips_cpu_h state, uint8_t rs, uint8_t rt, uint8_t rd, uint8_t sa){
-	return mips_Success;
+	if ((rt != 0) || (rd != 0) || (sa != 0)){
+		return mips_ExceptionInvalidInstruction;
+	}
+
+	state->pc = state->pcN;
+	state->pcN = state->GPReg[rs];
+	return mips_Success;;
 }
 
 mips_error MFHI(mips_cpu_h state, uint8_t rs, uint8_t rt, uint8_t rd, uint8_t sa){
-	return mips_Success;
+	if (rs != 0 || rt != 0 || sa != 0){
+		return mips_ExceptionInvalidInstruction;
+	}
+	if (rd != 0){
+		state->GPReg[rd] = state->HI;
+	}
+	return state->advPC(1);
 }
 
 mips_error MTHI(mips_cpu_h state, uint8_t rs, uint8_t rt, uint8_t rd, uint8_t sa){
-	return mips_Success;
+	if (rd != 0 || rt != 0 || sa != 0){
+		return mips_ExceptionInvalidInstruction;
+	}
+	state-> HI = state->GPReg[rd];
+	return state->advPC(1);
 }
 
 mips_error MFLO(mips_cpu_h state, uint8_t rs, uint8_t rt, uint8_t rd, uint8_t sa){
-	return mips_Success;
+	if (rs != 0 || rt != 0 || sa != 0){
+		return mips_ExceptionInvalidInstruction;
+	}
+	if (rd != 0){
+		state->GPReg[rd] = state->LO;
+	}
+	return state->advPC(1);
 }
 
 mips_error MTLO(mips_cpu_h state, uint8_t rs, uint8_t rt, uint8_t rd, uint8_t sa){
-	return mips_Success;
+	if (rd != 0 || rt != 0 || sa != 0){
+		return mips_ExceptionInvalidInstruction;
+	}
+	state->HI = state->GPReg[rd];
+	return state->advPC(1);
 }
 
 mips_error MULT(mips_cpu_h state, uint8_t rs, uint8_t rt, uint8_t rd, uint8_t sa){
-	return mips_Success;
+	if (rd != 0 || sa != 0){
+		return mips_ExceptionInvalidInstruction;
+	}
+	bool negative = false;
+	if (!is_positive(state->GPReg[rs])){
+		state->GPReg[rs] = twos_complement(state->GPReg[rs]);
+		negative = true;
+	}
+	if (!is_positive(state->GPReg[rt])){
+		state->GPReg[rt] = twos_complement(state->GPReg[rt]);
+		negative = ~negative;
+	}
+	uint64_t tmp = state->GPReg[rs] * state->GPReg[rt];
+	if (negative){
+		tmp = twos_complement(tmp);
+	}
+	state->LO = tmp & 0xFFFFFFFF;
+	state->HI = (tmp >> 32) & 0xFFFFFFFF;
+	return state->advPC(1);
 }
 
 mips_error MULTU(mips_cpu_h state, uint8_t rs, uint8_t rt, uint8_t rd, uint8_t sa){
-	return mips_Success;
+	if (rd != 0 || sa != 0){
+		return mips_ExceptionInvalidInstruction;
+	}
+	uint64_t tmp = state->GPReg[rs] * state->GPReg[rt];
+	state->LO = tmp & 0xFFFFFFFF;
+	state->HI = (tmp>>32) & 0xFFFFFFFF;
+	return state->advPC(1);
 }
 
 mips_error DIV(mips_cpu_h state, uint8_t rs, uint8_t rt, uint8_t rd, uint8_t sa){
-	return mips_Success;
+	if (rd != 0 || sa != 0){
+		return mips_ExceptionInvalidInstruction;
+	}
+
+	//Divide by 0 result is undefined
+	if (state->GPReg[rt] == 0){
+		return state->advPC(1);
+	}
+
+	bool negative = false;
+	if (!is_positive(state->GPReg[rs])){
+		state->GPReg[rs] = twos_complement(state->GPReg[rs]);
+		negative = true;
+	}
+	if (!is_positive(state->GPReg[rt])){
+		state->GPReg[rt] = twos_complement(state->GPReg[rt]);
+		negative = ~negative;
+	}
+
+	uint64_t tmp = state->GPReg[rs] / state->GPReg[rt];
+	if (negative){
+		tmp = twos_complement(tmp);
+	}
+	state->LO = tmp & 0xFFFFFFFF;
+	state->HI = (tmp >> 32) & 0xFFFFFFFF;
+	return state->advPC(1);
 }
 
 mips_error DIVU(mips_cpu_h state, uint8_t rs, uint8_t rt, uint8_t rd, uint8_t sa){
-	return mips_Success;
+	if (rd != 0 || sa != 0){
+		return mips_ExceptionInvalidInstruction;
+	}
+
+	//Divide by 0 result is undefined
+	if (state->GPReg[rt]==0){
+		return state->advPC(1);
+	}
+
+	uint64_t tmp = state->GPReg[rs] / state->GPReg[rt];
+	state->LO = tmp & 0xFFFFFFFF;
+	state->HI = (tmp >> 32) & 0xFFFFFFFF;
+	return state->advPC(1);
 }
 
 mips_error ADD(mips_cpu_h state, uint8_t rs, uint8_t rt, uint8_t rd, uint8_t sa){
@@ -617,4 +706,8 @@ bool bigger_than(uint32_t a, uint32_t b){
 	else {
 		return a < b;
 	}
+}
+
+uint64_t twos_complement(uint64_t a){
+	return (~a) + 1;
 }

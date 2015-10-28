@@ -178,6 +178,8 @@ bool is_positive(uint32_t in);
 //Returns true if (signed) a > b
 bool bigger_than(uint32_t a, uint32_t b);
 
+//Provides twos complement negative version of input
+uint64_t twos_complement(uint64_t a);
 
 #ifdef __cplusplus
 };

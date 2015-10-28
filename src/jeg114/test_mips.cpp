@@ -34,6 +34,8 @@ uint32_t J_type_instr(std::string instr, uint32_t target);
 
 void to_small_Endi(const uint32_t Data, uint8_t* output);
 
+uint32_t sign_extend16(uint16_t in);
+
 void test_mips_ADD(mips_cpu_h state, mips_mem_h mem);
 void test_mips_ADDU(mips_cpu_h state, mips_mem_h mem);
 void test_mips_SUBU(mips_cpu_h state, mips_mem_h mem);
@@ -57,7 +59,18 @@ void test_mips_SLLV(mips_cpu_h state, mips_mem_h mem);
 void test_mips_SRAV(mips_cpu_h state, mips_mem_h mem);
 void test_mips_SRA(mips_cpu_h state, mips_mem_h mem);
 void test_mips_LUI(mips_cpu_h state, mips_mem_h mem);
+void test_mips_MFHI(mips_cpu_h state, mips_mem_h mem);
+void test_mips_MTHI(mips_cpu_h state, mips_mem_h mem);
+void test_mips_MFLO(mips_cpu_h state, mips_mem_h mem);
+void test_mips_MTLO(mips_cpu_h state, mips_mem_h mem);
 void test_mips_J(mips_cpu_h state, mips_mem_h mem);
+void test_mips_BLTZ(mips_cpu_h state, mips_mem_h mem);
+void test_mips_BLTZAL(mips_cpu_h state, mips_mem_h mem);
+void test_mips_BLEZ(mips_cpu_h state, mips_mem_h mem);
+void test_mips_BGEZAL(mips_cpu_h state, mips_mem_h mem);
+void test_mips_BGEZ(mips_cpu_h state, mips_mem_h mem);
+void test_mips_BEQ(mips_cpu_h state, mips_mem_h mem);
+void test_mips_BGTZ(mips_cpu_h state, mips_mem_h mem);
 
 mips_error set_step_read(mips_cpu_h state,
 	const uint32_t& reg1,
@@ -123,6 +136,13 @@ int main(){
 	test_mips_OR(cpu, mem);
 	test_mips_XOR(cpu, mem);
 	test_mips_J(cpu,mem);
+	test_mips_BLTZ(cpu, mem);
+	test_mips_BLEZ(cpu, mem);
+	test_mips_BEQ(cpu, mem);
+	test_mips_BGTZ(cpu, mem);
+	test_mips_BGEZ(cpu, mem);
+	test_mips_BLTZAL(cpu, mem);
+	test_mips_BGEZAL(cpu, mem);
 	mips_test_end_suite();
 
 	cin.get();
@@ -244,7 +264,7 @@ mips_error set_step_read(mips_cpu_h state,
 	}
 	else if (regRead == 32){
 		if (err_step){
-			mips_cpu_get_register(state, regRead, &regRead_v);
+			mips_cpu_get_pc(state, &regRead_v);
 		}
 		else{
 			err = mips_cpu_get_pc(state, &regRead_v);
@@ -1394,6 +1414,527 @@ void test_mips_SRA(mips_cpu_h state, mips_mem_h mem){
 	mips_test_end_test(testId, (err == mips_Success) && (rd_v == 0xF0000000), "0x800000000 >> 3 == 0xF0000000 ");
 }
 
+void test_mips_BLTZ(mips_cpu_h state, mips_mem_h mem){
+	//BLTZ - I-type - Opcode 0x1 / d1 rs_v = 0
+
+	//Test 1+2 - Functionality False (test 1 = PC after BLTZ is PCN) (test 2 = PC after PCN is PCN+4)
+	int testId = mips_test_begin_test("BLTZ");
+	uint32_t rs = 4;
+	uint32_t rt = 0;
+	uint32_t PC;
+	uint32_t PC_before = 0;
+	uint32_t rs_v = 3;
+	uint32_t imm = 10;
+	uint32_t instr = I_type_instr(1, rs, rt, imm);
+	mips_error err = set_step_read(state, rs, rs_v, 32, 0, instr, 32, PC, mem);
+	mips_test_end_test(testId, (err == mips_Success) && (PC == PC_before+4), "Testing step BLTZ(false) PC = delay slot");
+	PC_before = PC;
+	testId = mips_test_begin_test("BLTZ");
+	//Instruction set to 0 (NOP = shift 0 by 0) if this instruction doesnt work, test fails
+	err = set_step_read(state, rs, rs_v, 33, 0, 0, 32, PC, mem);
+	mips_test_end_test(testId, (err == mips_Success) && (PC == PC_before + 4), "Testing second step BLTZ(false) PC = after delay slot");
+
+	//Test 3+4 - Functionality True (test 1 = PC after BLTZ is PCN) (test 2 = PC after PCN is PCN+4)
+	testId = mips_test_begin_test("BLTZ");
+	rs = 4;
+	PC = 0;
+	PC_before = 0;
+	rs_v = -1;
+	imm = 2;
+	instr = I_type_instr(1, rs, rt, imm);
+	err = set_step_read(state, rs, rs_v, 32, 0, instr, 32, PC, mem);
+	mips_test_end_test(testId, (err == mips_Success) && (PC == PC_before + 4), "Testing step BLTZ(true) PC = delay slot");
+	PC_before = PC;
+	testId = mips_test_begin_test("BLTZ");
+	//Instruction set to 0 (NOP = shift 0 by 0) if this instruction doesnt work, test fails
+	err = set_step_read(state, rs, rs_v, 33, 0, 0, 32, PC, mem);
+	mips_test_end_test(testId, (err == mips_Success) && (PC == (PC_before + (imm<<2))), "Testing second step BLTZ(true) PC = pc_delayslot + imm << 2");
+
+
+	//Test 5+6 - Functionality False corner case 0 (test 1 = PC after BLTZ is PCN) (test 2 = PC after PCN is PCN+4)
+	testId = mips_test_begin_test("BLTZ");
+	rs = 4;
+	PC = 0;
+	PC_before = 0;
+	rs_v = 0;
+	imm = 2;
+	instr = I_type_instr(1, rs, rt, imm);
+	err = set_step_read(state, rs, rs_v, 32, 0, instr, 32, PC, mem);
+	mips_test_end_test(testId, (err == mips_Success) && (PC == PC_before + 4), "Testing step BLTZ(true) PC = delay slot");
+	PC_before = PC;
+	testId = mips_test_begin_test("BLTZ");
+	//Instruction set to 0 (NOP = shift 0 by 0) if this instruction doesnt work, test fails
+	err = set_step_read(state, rs, rs_v, 33, 0, 0, 32, PC, mem);
+	mips_test_end_test(testId, (err == mips_Success) && (PC == (PC_before + 4)), "Testing second step BLTZ(true) PC = pc_delayslot + imm << 2");
+
+	//Test 7+8 - Functionality True Negative immediate (test 1 = PC after BLTZ is PCN) (test 2 = PC after PCN is PCN+4)
+	testId = mips_test_begin_test("BLTZ");
+	rs = 4;
+	PC = 0;
+	PC_before = 0;
+	rs_v = -1;
+	imm = 0x8001;
+	instr = I_type_instr(1, rs, rt, imm);
+	err = set_step_read(state, rs, rs_v, 32, 0, instr, 32, PC, mem);
+	mips_test_end_test(testId, (err == mips_Success) && (PC == PC_before + 4), "Testing step BLTZ(true) PC = delay slot");
+	PC_before = PC;
+	testId = mips_test_begin_test("BLTZ");
+	//Instruction set to 0 (NOP = shift 0 by 0) if this instruction doesnt work, test fails
+	err = set_step_read(state, rs, rs_v, 33, 0, 0, 32, PC, mem);
+	mips_test_end_test(testId, (err == mips_Success) && (PC == (PC_before + sign_extend16(imm << 2))), "Testing second step BLTZ(true) PC = pc_delayslot + imm << 2");
+
+}
+
+void test_mips_BLTZAL(mips_cpu_h state, mips_mem_h mem){
+	//BLTZAL - I-type - Opcode 0x1 / d1 rs_v = 16
+
+	//Test 1+2 - Functionality False (test 1 = PC after BLTZAL is PCN) (test 2 = PC after PCN is PCN+4)
+	int testId = mips_test_begin_test("BLTZAL");
+	uint32_t rs = 4;
+	uint32_t rt = 16;
+	uint32_t PC;
+	uint32_t PC_before = 0;
+	uint32_t rs_v = 3;
+	uint32_t imm = 10;
+	uint32_t link = 0;
+	uint32_t instr = I_type_instr(1, rs, rt, imm);
+	mips_error err = set_step_read(state, rs, rs_v, 32, 0, instr, 32, PC, mem);
+	mips_cpu_get_register(state, 31, &link);
+	mips_test_end_test(testId, (err == mips_Success) && (PC == PC_before + 4) && (link == PC_before + 8), "Testing step BLTZAL(false) PC = delay slot");
+	PC_before = PC;
+	testId = mips_test_begin_test("BLTZAL");
+	//Instruction set to 0 (NOP = shift 0 by 0) if this instruction doesnt work, test fails
+	err = set_step_read(state, rs, rs_v, 33, 0, 0, 32, PC, mem);
+	mips_test_end_test(testId, (err == mips_Success) && (PC == PC_before + 4), "Testing second step BLTZAL(false) PC = after delay slot");
+
+	//Test 3+4 - Functionality True (test 1 = PC after BLTZAL is PCN) (test 2 = PC after PCN is PCN+4)
+	testId = mips_test_begin_test("BLTZAL");
+	rs = 4;
+	PC = 0;
+	PC_before = 0;
+	rs_v = -1;
+	imm = 2;
+	instr = I_type_instr(1, rs, rt, imm);
+	err = set_step_read(state, rs, rs_v, 32, 0, instr, 32, PC, mem);
+	mips_cpu_get_register(state, 31, &link);
+	mips_test_end_test(testId, (err == mips_Success) && (PC == PC_before + 4) && (link == PC_before + 8), "Testing step BLTZAL(true) PC = delay slot");
+	PC_before = PC;
+	testId = mips_test_begin_test("BLTZAL");
+	//Instruction set to 0 (NOP = shift 0 by 0) if this instruction doesnt work, test fails
+	err = set_step_read(state, rs, rs_v, 33, 0, 0, 32, PC, mem);
+	mips_test_end_test(testId, (err == mips_Success) && (PC == (PC_before + (imm << 2))), "Testing second step BLTZAL(true) PC = pc_delayslot + imm << 2");
+
+
+	//Test 5+6 - Functionality False corner case 0 (test 1 = PC after BLTZAL is PCN) (test 2 = PC after PCN is PCN+4)
+	testId = mips_test_begin_test("BLTZAL");
+	rs = 4;
+	PC = 0;
+	PC_before = 0;
+	rs_v = 0;
+	imm = 2;
+	instr = I_type_instr(1, rs, rt, imm);
+	err = set_step_read(state, rs, rs_v, 32, 0, instr, 32, PC, mem);
+	mips_cpu_get_register(state, 31, &link);
+	mips_test_end_test(testId, (err == mips_Success) && (PC == PC_before + 4) && (link == PC_before + 8), "Testing step BLTZAL(true) PC = delay slot");
+	PC_before = PC;
+	testId = mips_test_begin_test("BLTZAL");
+	//Instruction set to 0 (NOP = shift 0 by 0) if this instruction doesnt work, test fails
+	err = set_step_read(state, rs, rs_v, 33, 0, 0, 32, PC, mem);
+	mips_test_end_test(testId, (err == mips_Success) && (PC == (PC_before + 4)), "Testing second step BLTZAL(true) PC = pc_delayslot + imm << 2");
+
+	//Test 6+7 - Functionality True Negative immediate (test 1 = PC after BLTZAL is PCN) (test 2 = PC after PCN is PCN+4)
+	testId = mips_test_begin_test("BLTZAL");
+	rs = 4;
+	PC = 0;
+	PC_before = 0;
+	rs_v = -1;
+	imm = 0x8001;
+	instr = I_type_instr(1, rs, rt, imm);
+	err = set_step_read(state, rs, rs_v, 32, 0, instr, 32, PC, mem);
+	mips_cpu_get_register(state, 31, &link);
+	mips_test_end_test(testId, (err == mips_Success) && (PC == PC_before + 4) && (link == PC_before + 8), "Testing step BLTZAL(true) PC = delay slot");
+	PC_before = PC;
+	testId = mips_test_begin_test("BLTZAL");
+	//Instruction set to 0 (NOP = shift 0 by 0) if this instruction doesnt work, test fails
+	err = set_step_read(state, rs, rs_v, 33, 0, 0, 32, PC, mem);
+	mips_test_end_test(testId, (err == mips_Success) && (PC == (PC_before + sign_extend16(imm << 2))), "Testing second step BLTZAL(true) PC = pc_delayslot + imm << 2");
+
+}
+
+void test_mips_BLEZ(mips_cpu_h state, mips_mem_h mem){
+	//BLEZ - I-type - Opcode 0x6 / d6
+
+	//Test 1+2 - Functionality False (test 1 = PC after BLEZ is PCN) (test 2 = PC after PCN is PCN+4)
+	int testId = mips_test_begin_test("BLEZ");
+	uint32_t rs = 4;
+	uint32_t rt = 0;
+	uint32_t PC;
+	uint32_t PC_before = 0;
+	uint32_t rs_v = 3;
+	uint32_t imm = 10;
+	uint32_t instr = I_type_instr(6, rs, rt, imm);
+	mips_error err = set_step_read(state, rs, rs_v, 32, 0, instr, 32, PC, mem);
+	mips_test_end_test(testId, (err == mips_Success) && (PC == PC_before + 4), "Testing step BLEZ(false) PC = delay slot");
+	PC_before = PC;
+	testId = mips_test_begin_test("BLEZ");
+	//Instruction set to 0 (NOP = shift 0 by 0) if this instruction doesnt work, test fails
+	err = set_step_read(state, rs, rs_v, 33, 0, 0, 32, PC, mem);
+	mips_test_end_test(testId, (err == mips_Success) && (PC == PC_before + 4), "Testing second step BLEZ(false) PC = after delay slot");
+
+	//Test 3+4 - Functionality True (test 1 = PC after BLEZ is PCN) (test 2 = PC after PCN is PCN+4)
+	testId = mips_test_begin_test("BLEZ");
+	rs = 4;
+	PC = 0;
+	PC_before = 0;
+	rs_v = -1;
+	imm = 2;
+	instr = I_type_instr(6, rs, rt, imm);
+	err = set_step_read(state, rs, rs_v, 32, 0, instr, 32, PC, mem);
+	mips_test_end_test(testId, (err == mips_Success) && (PC == PC_before + 4), "Testing step BLEZ(true) PC = delay slot");
+	PC_before = PC;
+	testId = mips_test_begin_test("BLEZ");
+	//Instruction set to 0 (NOP = shift 0 by 0) if this instruction doesnt work, test fails
+	err = set_step_read(state, rs, rs_v, 33, 0, 0, 32, PC, mem);
+	mips_test_end_test(testId, (err == mips_Success) && (PC == (PC_before + (imm << 2))), "Testing second step BLEZ(true) PC = pc_delayslot + imm << 2");
+
+
+	//Test 5+6 - Functionality True corner case 0 (test 1 = PC after BLEZ is PCN) (test 2 = PC after PCN is PCN+4)
+	testId = mips_test_begin_test("BLEZ");
+	rs = 4;
+	PC = 0;
+	PC_before = 0;
+	rs_v = 0;
+	imm = 2;
+	instr = I_type_instr(6, rs, rt, imm);
+	err = set_step_read(state, rs, rs_v, 32, 0, instr, 32, PC, mem);
+	mips_test_end_test(testId, (err == mips_Success) && (PC == PC_before + 4), "Testing step BLEZ(true) PC = delay slot");
+	PC_before = PC;
+	testId = mips_test_begin_test("BLEZ");
+	//Instruction set to 0 (NOP = shift 0 by 0) if this instruction doesnt work, test fails
+	err = set_step_read(state, rs, rs_v, 33, 0, 0, 32, PC, mem);
+	mips_test_end_test(testId, (err == mips_Success) && (PC == (PC_before + (imm << 2))), "Testing second step BLEZ(true) PC = pc_delayslot + imm << 2");
+
+	//Test 7+8 - Functionality True Negative immediate (test 1 = PC after BLEZ is PCN) (test 2 = PC after PCN is PCN+4)
+	testId = mips_test_begin_test("BLEZ");
+	rs = 4;
+	PC = 0;
+	PC_before = 0;
+	rs_v = -1;
+	imm = 0x80000001;
+	instr = I_type_instr(6, rs, rt, imm);
+	err = set_step_read(state, rs, rs_v, 32, 0, instr, 32, PC, mem);
+	mips_test_end_test(testId, (err == mips_Success) && (PC == PC_before + 4), "Testing step BLEZ(true) PC = delay slot");
+	PC_before = PC;
+	testId = mips_test_begin_test("BLEZ");
+	//Instruction set to 0 (NOP = shift 0 by 0) if this instruction doesnt work, test fails
+	err = set_step_read(state, rs, rs_v, 33, 0, 0, 32, PC, mem);
+	mips_test_end_test(testId, (err == mips_Success) && (PC == (PC_before + sign_extend16(imm << 2))), "Testing second step BLEZ(true) PC = pc_delayslot + imm << 2");
+
+	//Test 9 - Invalid Instruction rt_v != 0
+	testId = mips_test_begin_test("BLEZ");
+	rs = 4;
+	rt = 2;
+	rt = 1;
+	PC = 0;
+	rs_v = -1;
+	imm = 0x8001;
+	instr = I_type_instr(6, rs, rt, imm);
+	mips_cpu_set_register(state, rt, 1);
+	err = set_step_read(state, rs, rs_v, 32, PC, instr, 32, PC, mem);
+	mips_test_end_test(testId, (err == mips_ExceptionInvalidInstruction) && (PC == 0) , "Testing step BLEZ(true) PC = delay slot");
+}
+
+void test_mips_BGTZ(mips_cpu_h state, mips_mem_h mem){
+	//BGTZ - I-type - Opcode 0x7 / d7
+
+	//Test 1+2 - Functionality False (test 1 = PC after BGTZ is PCN) (test 2 = PC after PCN is PCN+4)
+	int testId = mips_test_begin_test("BGTZ");
+	uint32_t rs = 4;
+	uint32_t rt = 0;
+	uint32_t PC;
+	uint32_t PC_before = 0;
+	uint32_t rs_v = -1;
+	uint32_t imm = 10;
+	uint32_t instr = I_type_instr(7, rs, rt, imm);
+	mips_error err = set_step_read(state, rs, rs_v, 32, 0, instr, 32, PC, mem);
+	mips_test_end_test(testId, (err == mips_Success) && (PC == PC_before + 4), "Testing step BGTZ(false) PC = delay slot");
+	PC_before = PC;
+	testId = mips_test_begin_test("BGTZ");
+	//Instruction set to 0 (NOP = shift 0 by 0) if this instruction doesnt work, test fails
+	err = set_step_read(state, rs, rs_v, 33, 0, 0, 32, PC, mem);
+	mips_test_end_test(testId, (err == mips_Success) && (PC == PC_before + 4), "Testing second step BGTZ(false) PC = after delay slot");
+
+	//Test 3+4 - Functionality True (test 1 = PC after BGTZ is PCN) (test 2 = PC after PCN is PCN+4)
+	testId = mips_test_begin_test("BGTZ");
+	rs = 4;
+	PC = 0;
+	PC_before = 0;
+	rs_v = 1;
+	imm = 2;
+	instr = I_type_instr(7, rs, rt, imm);
+	err = set_step_read(state, rs, rs_v, 32, 0, instr, 32, PC, mem);
+	mips_test_end_test(testId, (err == mips_Success) && (PC == PC_before + 4), "Testing step BGTZ(true) PC = delay slot");
+	PC_before = PC;
+	testId = mips_test_begin_test("BGTZ");
+	//Instruction set to 0 (NOP = shift 0 by 0) if this instruction doesnt work, test fails
+	err = set_step_read(state, rs, rs_v, 33, 0, 0, 32, PC, mem);
+	mips_test_end_test(testId, (err == mips_Success) && (PC == (PC_before + (imm << 2))), "Testing second step BGTZ(true) PC = pc_delayslot + imm << 2");
+
+
+	//Test 5+6 - Functionality False corner case 0 (test 1 = PC after BGTZ is PCN) (test 2 = PC after PCN is PCN+4)
+	testId = mips_test_begin_test("BGTZ");
+	rs = 4;
+	PC = 0;
+	PC_before = 0;
+	rs_v = 0;
+	imm = 2;
+	instr = I_type_instr(7, rs, rt, imm);
+	err = set_step_read(state, rs, rs_v, 32, 0, instr, 32, PC, mem);
+	mips_test_end_test(testId, (err == mips_Success) && (PC == PC_before + 4), "Testing step BGTZ(true) PC = delay slot");
+	PC_before = PC;
+	testId = mips_test_begin_test("BGTZ");
+	//Instruction set to 0 (NOP = shift 0 by 0) if this instruction doesnt work, test fails
+	err = set_step_read(state, rs, rs_v, 33, 0, 0, 32, PC, mem);
+	mips_test_end_test(testId, (err == mips_Success) && (PC == (PC_before + 4)), "Testing second step BGTZ(true) PC = pc_delayslot + imm << 2");
+
+	//Test 7+8 - Functionality True Negative immediate (test 1 = PC after BGTZ is PCN) (test 2 = PC after PCN is PCN+4)
+	testId = mips_test_begin_test("BGTZ");
+	rs = 4;
+	PC = 0;
+	PC_before = 0;
+	rs_v = 1;
+	imm = 0x8001;
+	instr = I_type_instr(7, rs, rt, imm);
+	err = set_step_read(state, rs, rs_v, 32, 0, instr, 32, PC, mem);
+	mips_test_end_test(testId, (err == mips_Success) && (PC == PC_before + 4), "Testing step BGTZ(true) PC = delay slot");
+	PC_before = PC;
+	testId = mips_test_begin_test("BGTZ");
+	//Instruction set to 0 (NOP = shift 0 by 0) if this instruction doesnt work, test fails
+	err = set_step_read(state, rs, rs_v, 33, 0, 0, 32, PC, mem);
+	mips_test_end_test(testId, (err == mips_Success) && (PC == (PC_before + sign_extend16(imm << 2))), "Testing second step BGTZ(true) PC = pc_delayslot + imm << 2");
+
+	//Test 9 - Invalid Instruction rt_v != 0
+	testId = mips_test_begin_test("BGTZ");
+	rs = 4;
+	rt = 2;
+	rt = 1;
+	PC = 0;
+	rs_v = -1;
+	imm = 0x80000001;
+	instr = I_type_instr(7, rs, rt, imm);
+	mips_cpu_set_register(state, rt, 1);
+	err = set_step_read(state, rs, rs_v, 32, PC, instr, 32, PC, mem);
+	mips_test_end_test(testId, (err == mips_ExceptionInvalidInstruction) && (PC == 0), "Testing step BGTZ(true) PC = delay slot");
+}
+
+void test_mips_BGEZ(mips_cpu_h state, mips_mem_h mem){
+	//BGEZ - I-type - Opcode 0x1 / d1 - rs_v = 1
+
+	//Test 1+2 - Functionality False (test 1 = PC after BGEZ is PCN) (test 2 = PC after PCN is PCN+4)
+	int testId = mips_test_begin_test("BGEZ");
+	uint32_t rs = 4;
+	uint32_t rt = 1;
+	uint32_t PC;
+	uint32_t PC_before = 0;
+	uint32_t rs_v = -1;
+	uint32_t imm = 2;
+	uint32_t instr = I_type_instr(1, rs, rt, imm);
+	mips_error err = set_step_read(state, rs, rs_v, 32, 0, instr, 32, PC, mem);
+	mips_test_end_test(testId, (err == mips_Success) && (PC == PC_before + 4), "Testing step BGEZ(false) PC = delay slot");
+	PC_before = PC;
+	testId = mips_test_begin_test("BGEZ");
+	//Instruction set to 0 (NOP = shift 0 by 0) if this instruction doesnt work, test fails
+	err = set_step_read(state, rs, rs_v, 33, 0, 0, 32, PC, mem);
+	mips_test_end_test(testId, (err == mips_Success) && (PC == PC_before + 4), "Testing second step BGEZ(false) PC = after delay slot");
+
+	//Test 3+4 - Functionality True (test 1 = PC after BGEZ is PCN) (test 2 = PC after PCN is PCN+4)
+	testId = mips_test_begin_test("BGEZ");
+	rs = 4;
+	PC = 0;
+	PC_before = 0;
+	rs_v = 1;
+	imm = 2;
+	instr = I_type_instr(1, rs, rt, imm);
+	err = set_step_read(state, rs, rs_v, 32, 0, instr, 32, PC, mem);
+	mips_test_end_test(testId, (err == mips_Success) && (PC == PC_before + 4), "Testing step BGEZ(true) PC = delay slot");
+	PC_before = PC;
+	testId = mips_test_begin_test("BGEZ");
+	//Instruction set to 0 (NOP = shift 0 by 0) if this instruction doesnt work, test fails
+	err = set_step_read(state, rs, rs_v, 33, 0, 0, 32, PC, mem);
+	mips_test_end_test(testId, (err == mips_Success) && (PC == (PC_before + (imm << 2))), "Testing second step BGEZ(true) PC = pc_delayslot + imm << 2");
+
+	//Test 5+6 - Functionality True Negative immediate (test 1 = PC after BLTZ is PCN) (test 2 = PC after PCN is PCN+4)
+	testId = mips_test_begin_test("BGEZ");
+	rs = 4;
+	PC = 0;
+	PC_before = 0;
+	rs_v = 3;
+	imm = 0x8001;
+	instr = I_type_instr(1, rs, rt, imm);
+	err = set_step_read(state, rs, rs_v, 32, 0, instr, 32, PC, mem);
+	mips_test_end_test(testId, (err == mips_Success) && (PC == PC_before + 4), "Testing step BLTZ(true) PC = delay slot");
+	PC_before = PC;
+	testId = mips_test_begin_test("BGEZ");
+	//Instruction set to 0 (NOP = shift 0 by 0) if this instruction doesnt work, test fails
+	err = set_step_read(state, rs, rs_v, 33, 0, 0, 32, PC, mem);
+	mips_test_end_test(testId, (err == mips_Success) && (PC == (PC_before + sign_extend16(imm << 2))), "Testing second step BLTZ(true) PC = pc_delayslot + imm << 2");
+
+
+	//Test  7+8 - Functionality True corner case 0 (test 1 = PC after BGEZ is PCN) (test 2 = PC after PCN is PCN+4)
+	testId = mips_test_begin_test("BGEZ");
+	rs = 4;
+	PC = 0;
+	PC_before = 0;
+	rs_v = 0;
+	imm = 2;
+	instr = I_type_instr(1, rs, rt, imm);
+	err = set_step_read(state, rs, rs_v, 32, 0, instr, 32, PC, mem);
+	mips_test_end_test(testId, (err == mips_Success) && (PC == PC_before + 4), "Testing step BGEZ(true) PC = delay slot");
+	PC_before = PC;
+	testId = mips_test_begin_test("BGEZ");
+	//Instruction set to 0 (NOP = shift 0 by 0) if this instruction doesnt work, test fails
+	err = set_step_read(state, rs, rs_v, 33, 0, 0, 32, PC, mem);
+	mips_test_end_test(testId, (err == mips_Success) && (PC == (PC_before + (imm<<2))), "Testing second step BGEZ(true) PC = pc_delayslot + imm << 2");
+
+}
+
+void test_mips_BGEZAL(mips_cpu_h state, mips_mem_h mem){
+	//BGEZAL - I-type - Opcode 0x1 / d1 rs_v = 17
+
+	//Test 1+2 - Functionality False (test 1 = PC after BGEZAL is PCN) (test 2 = PC after PCN is PCN+4)
+	int testId = mips_test_begin_test("BGEZAL");
+	uint32_t rs = 4;
+	uint32_t rt = 17;
+	uint32_t PC;
+	uint32_t PC_before = 0;
+	uint32_t rs_v = -1;
+	uint32_t imm = 2;
+	uint32_t link = 0;
+	uint32_t instr = I_type_instr(1, rs, rt, imm);
+	mips_error err = set_step_read(state, rs, rs_v, 32, 0, instr, 32, PC, mem);
+	mips_cpu_get_register(state, 31, &link);
+	mips_test_end_test(testId, (err == mips_Success) && (PC == PC_before + 4) && (link == PC_before + 8), "Testing step BGEZAL(false) PC = delay slot");
+	PC_before = PC;
+	testId = mips_test_begin_test("BGEZAL");
+	//Instruction set to 0 (NOP = shift 0 by 0) if this instruction doesnt work, test fails
+	err = set_step_read(state, rs, rs_v, 33, 0, 0, 32, PC, mem);
+	mips_test_end_test(testId, (err == mips_Success) && (PC == PC_before + 4), "Testing second step BGEZAL(false) PC = after delay slot");
+
+	//Test 3+4 - Functionality True (test 1 = PC after BGEZAL is PCN) (test 2 = PC after PCN is PCN+4)
+	testId = mips_test_begin_test("BGEZAL");
+	rs = 4;
+	PC = 0;
+	PC_before = 0;
+	rs_v = 2;
+	imm = 2;
+	instr = I_type_instr(1, rs, rt, imm);
+	err = set_step_read(state, rs, rs_v, 32, 0, instr, 32, PC, mem);
+	mips_cpu_get_register(state, 31, &link);
+	mips_test_end_test(testId, (err == mips_Success) && (PC == PC_before + 4) && (link == PC_before + 8), "Testing step BGEZAL(true) PC = delay slot");
+	PC_before = PC;
+	testId = mips_test_begin_test("BGEZAL");
+	//Instruction set to 0 (NOP = shift 0 by 0) if this instruction doesnt work, test fails
+	err = set_step_read(state, rs, rs_v, 33, 0, 0, 32, PC, mem);
+	mips_test_end_test(testId, (err == mips_Success) && (PC == (PC_before + (imm << 2))), "Testing second step BGEZAL(true) PC = pc_delayslot + imm << 2");
+
+
+	//Test 5+6 - Functionality True corner case 0 (test 1 = PC after BGEZAL is PCN) (test 2 = PC after PCN is PCN+4)
+	testId = mips_test_begin_test("BGEZAL");
+	rs = 4;
+	PC = 0;
+	PC_before = 0;
+	rs_v = 0;
+	imm = 2;
+	instr = I_type_instr(1, rs, rt, imm);
+	err = set_step_read(state, rs, rs_v, 32, 0, instr, 32, PC, mem);
+	mips_cpu_get_register(state, 31, &link);
+	mips_test_end_test(testId, (err == mips_Success) && (PC == PC_before + 4) && (link == PC_before + 8), "Testing step BGEZAL(true) PC = delay slot");
+	PC_before = PC;
+	testId = mips_test_begin_test("BGEZAL");
+	//Instruction set to 0 (NOP = shift 0 by 0) if this instruction doesnt work, test fails
+	err = set_step_read(state, rs, rs_v, 33, 0, 0, 32, PC, mem);
+	mips_test_end_test(testId, (err == mips_Success) && (PC == (PC_before + (imm << 2))), "Testing second step BGEZAL(true) PC = pc_delayslot + imm << 2");
+
+	//Test 6+7 - Functionality True Negative immediate (test 1 = PC after BGEZAL is PCN) (test 2 = PC after PCN is PCN+4)
+	testId = mips_test_begin_test("BGEZAL");
+	rs = 4;
+	PC = 0;
+	PC_before = 0;
+	rs_v = 1;
+	imm = 0x8001;
+	instr = I_type_instr(1, rs, rt, imm);
+	err = set_step_read(state, rs, rs_v, 32, 0, instr, 32, PC, mem);
+	mips_cpu_get_register(state, 31, &link);
+	mips_test_end_test(testId, (err == mips_Success) && (PC == PC_before + 4) && (link == PC_before + 8), "Testing step BGEZAL(true) PC = delay slot");
+	PC_before = PC;
+	testId = mips_test_begin_test("BGEZAL");
+	//Instruction set to 0 (NOP = shift 0 by 0) if this instruction doesnt work, test fails
+	err = set_step_read(state, rs, rs_v, 33, 0, 0, 32, PC, mem);
+	mips_test_end_test(testId, (err == mips_Success) && (PC == (PC_before + sign_extend16(imm << 2))), "Testing second step BGEZAL(true) PC = pc_delayslot + imm << 2");
+
+}
+
+void test_mips_BEQ(mips_cpu_h state, mips_mem_h mem){
+	//BEQ - I-type - Opcode 0x7 / d7
+
+	//Test 1+2 - Functionality False (test 1 = PC after BEQ is PCN) (test 2 = PC after PCN is PCN+4)
+	int testId = mips_test_begin_test("BEQ");
+	uint32_t rs = 4;
+	uint32_t rt = 3;
+	uint32_t PC;
+	uint32_t PC_before = 0;
+	uint32_t rs_v = -1;
+	uint32_t rt_v = 0;
+	uint32_t imm = 10;
+	uint32_t instr = I_type_instr(4, rs, rt, imm);
+	mips_cpu_set_register(state, rt, rt_v);
+	mips_error err = set_step_read(state, rs, rs_v, 32, 0, instr, 32, PC, mem);
+	mips_test_end_test(testId, (err == mips_Success) && (PC == PC_before + 4), "Testing step BEQ(false) PC = delay slot");
+	PC_before = PC;
+	testId = mips_test_begin_test("BEQ");
+	//Instruction set to 0 (NOP = shift 0 by 0) if this instruction doesnt work, test fails
+	err = set_step_read(state, rs, rs_v, 33, 0, 0, 32, PC, mem);
+	mips_test_end_test(testId, (err == mips_Success) && (PC == PC_before + 4), "Testing second step BEQ(false) PC = after delay slot");
+
+	//Test 3+4 - Functionality True (test 1 = PC after BEQ is PCN) (test 2 = PC after PCN is PCN+4)
+	testId = mips_test_begin_test("BEQ");
+	rs = 4;
+	PC = 0;
+	PC_before = 0;
+	rs_v = 1;
+	rt_v = 1;
+	imm = 2;
+	instr = I_type_instr(4, rs, rt, imm);
+	mips_cpu_set_register(state, rt, rt_v);
+	err = set_step_read(state, rs, rs_v, 32, 0, instr, 32, PC, mem);
+	mips_test_end_test(testId, (err == mips_Success) && (PC == PC_before + 4), "Testing step BEQ(true) PC = delay slot");
+	PC_before = PC;
+	testId = mips_test_begin_test("BEQ");
+	//Instruction set to 0 (NOP = shift 0 by 0) if this instruction doesnt work, test fails
+	err = set_step_read(state, rs, rs_v, 33, 0, 0, 32, PC, mem);
+	mips_test_end_test(testId, (err == mips_Success) && (PC == (PC_before + (imm << 2))), "Testing second step BEQ(true) PC = pc_delayslot + imm << 2");
+
+
+	//Test 5+6 - Functionality True Negative immediate (test 1 = PC after BEQ is PCN) (test 2 = PC after PCN is PCN+4)
+	testId = mips_test_begin_test("BEQ");
+	rs = 4;
+	PC = 0;
+	PC_before = 0;
+	rs_v = 1;
+	rt_v = 1;
+	imm = 0x8001;
+	instr = I_type_instr(4, rs, rt, imm);
+	mips_cpu_set_register(state, rt, rt_v);
+	err = set_step_read(state, rs, rs_v, 32, 0, instr, 32, PC, mem);
+	mips_test_end_test(testId, (err == mips_Success) && (PC == PC_before + 4), "Testing step BEQ(true) PC = delay slot");
+	PC_before = PC;
+	testId = mips_test_begin_test("BEQ");
+	//Instruction set to 0 (NOP = shift 0 by 0) if this instruction doesnt work, test fails
+	err = set_step_read(state, rs, rs_v, 33, 0, 0, 32, PC, mem);
+	mips_test_end_test(testId, (err == mips_Success) && (PC == (PC_before + sign_extend16(imm << 2))), "Testing second step BEQ(true) PC = pc_delayslot + imm << 2");
+
+}
+
 void test_mips_J(mips_cpu_h state, mips_mem_h mem){
 	//J - J-type - Opcode 0x2 / d2
 
@@ -1430,3 +1971,12 @@ void to_small_Endi(const uint32_t Data, uint8_t* output){
 	output[3] = (Data >> 0) & 0xFF;
 }
 
+uint32_t sign_extend16(uint16_t in){
+	uint32_t tmp = in;
+	if ((in >> 15) == 1){
+		return(tmp | 0xFFFF0000);
+	}
+	else{
+		return tmp;
+	}
+}

@@ -355,6 +355,7 @@ mips_error mips_cpu_step(mips_cpu_h state){
 				default:
 					step_err = mips_ExceptionInvalidInstruction;
 				}
+				break;
 			case 4:
 				if (state->debug_level > 0){
 					fprintf(state->debug_out, "BEQ\n");
@@ -515,9 +516,10 @@ mips_error mips_cpu_set_debug_level(mips_cpu_h state, unsigned level, FILE *dest
 	}
 }
 
+//PC=PCN, PCN = PCN + offset<<2 (SHIFT HAPPENS AFTER CALL!!)
 mips_error mips_cpu_impl::advPC(uint32_t offset){
 	pc = pcN;
-	pcN = pcN + (offset << 2);
+	pcN = pcN + (offset<<2);
 	if (debug_level >= 2){
 		fprintf(debug_out, "New PC: 0x%08x     Next PC: 0x%08x \n-----------------------------\n", pc, pcN);
 	}

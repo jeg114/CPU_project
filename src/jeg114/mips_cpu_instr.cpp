@@ -342,7 +342,7 @@ mips_error SH(mips_cpu_h state, uint8_t rs, uint8_t rt, uint16_t imm){
 	if ((address & 1) != 0){
 		return mips_ExceptionInvalidAlignment;
 	}
-	bool top_half = (address >> 1) & 0x1;
+	bool top_half = !((address >> 1) & 0x1);
 	address = address & 0xFFFFFFFC;
 
 	uint8_t store[4];
@@ -357,13 +357,13 @@ mips_error SH(mips_cpu_h state, uint8_t rs, uint8_t rt, uint16_t imm){
 	if (top_half){
 		//MSB in little endian is high addr
 		//MSB of top half is 32 .. 24
-		store[2] = state->GPReg[rt] >> 8;
-		store[3] = state->GPReg[rt];
+		store[0] = state->GPReg[rt] >> 8;
+		store[1] = state->GPReg[rt];
 	}
 	else{
 		//MSB of bottom half is 16..8
-		store[0] = state->GPReg[rt] >> 8;
-		store[1] = state->GPReg[rt];
+		store[2] = state->GPReg[rt] >> 8;
+		store[3] = state->GPReg[rt];
 	}
 	err = mips_mem_write(state->mem_handle, address, 4, store);
 
@@ -568,7 +568,7 @@ mips_error MTLO(mips_cpu_h state, uint8_t rs, uint8_t rt, uint8_t rd, uint8_t sa
 	if (rd != 0 || rt != 0 || sa != 0){
 		return mips_ExceptionInvalidInstruction;
 	}
-	state->HI = state->GPReg[rs];
+	state->LO = state->GPReg[rs];
 	return state->advPC(1);
 }
 
@@ -577,12 +577,14 @@ mips_error MULT(mips_cpu_h state, uint8_t rs, uint8_t rt, uint8_t rd, uint8_t sa
 		return mips_ExceptionInvalidInstruction;
 	}
 	bool negative = false;
+	uint32_t tmp_rs = state->GPReg[rs];
+	uint32_t tmp_rt = state->GPReg[rt];
 	if (!is_positive(state->GPReg[rs])){
-		state->GPReg[rs] = twos_complement(state->GPReg[rs]);
+		 tmp_rs = twos_complement(tmp_rs);
 		negative = true;
 	}
 	if (!is_positive(state->GPReg[rt])){
-		state->GPReg[rt] = twos_complement(state->GPReg[rt]);
+		tmp_rt = twos_complement(tmp_rt);
 		if (negative){
 			negative = false;
 		}
@@ -590,7 +592,7 @@ mips_error MULT(mips_cpu_h state, uint8_t rs, uint8_t rt, uint8_t rd, uint8_t sa
 			negative = true;
 		}
 	}
-	uint64_t tmp = (uint64_t)state->GPReg[rs] * (uint64_t)state->GPReg[rt];
+	uint64_t tmp = (uint64_t)tmp_rs * (uint64_t)tmp_rt;
 	if (negative){
 		tmp = twos_complement(tmp);
 	}
@@ -620,12 +622,14 @@ mips_error DIV(mips_cpu_h state, uint8_t rs, uint8_t rt, uint8_t rd, uint8_t sa)
 	}
 
 	bool negative = false;
+	uint32_t tmp_rs = state->GPReg[rs];
+	uint32_t tmp_rt = state->GPReg[rt];
 	if (!is_positive(state->GPReg[rs])){
-		state->GPReg[rs] = twos_complement(state->GPReg[rs]);
+		tmp_rs = twos_complement(state->GPReg[rs]);
 		negative = true;
 	}
 	if (!is_positive(state->GPReg[rt])){
-		state->GPReg[rt] = twos_complement(state->GPReg[rt]);
+		tmp_rt = twos_complement(state->GPReg[rt]);
 		if (negative){
 			negative = false;
 		}
@@ -634,10 +638,12 @@ mips_error DIV(mips_cpu_h state, uint8_t rs, uint8_t rt, uint8_t rd, uint8_t sa)
 		}
 	}
 
-	uint32_t div = state->GPReg[rs] / state->GPReg[rt];
-	uint32_t rem = state->GPReg[rs] / state->GPReg[rt];
+	uint32_t div = tmp_rs / tmp_rt;
+	uint32_t rem = tmp_rs % tmp_rt;
 	if (negative){
 		div = twos_complement(div);
+	}
+	if (!is_positive(state->GPReg[rs])){
 		rem = twos_complement(rem);
 	}
 	state->LO = div;

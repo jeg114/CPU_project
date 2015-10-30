@@ -79,13 +79,18 @@ void test_mips_MF_MT_HI_LO(mips_cpu_h state, mips_mem_h mem, FILE* err_log);
 void test_mips_MULTU(mips_cpu_h state, mips_mem_h mem, FILE* err_log);
 void test_mips_MULT(mips_cpu_h state, mips_mem_h mem, FILE* err_log);
 void test_mips_DIVU(mips_cpu_h state, mips_mem_h mem, FILE* err_log);
+void test_mips_DIV(mips_cpu_h state, mips_mem_h mem, FILE* err_log);
 void test_mips_LUI(mips_cpu_h state, mips_mem_h mem, FILE* err_log);
 void test_mips_LB(mips_cpu_h state, mips_mem_h mem, FILE* err_log);
 void test_mips_LBU(mips_cpu_h state, mips_mem_h mem, FILE* err_log);
 void test_mips_LHU(mips_cpu_h state, mips_mem_h mem, FILE* err_log);
 void test_mips_LH(mips_cpu_h state, mips_mem_h mem, FILE* err_log);
+void test_mips_LW(mips_cpu_h state, mips_mem_h mem, FILE* err_log);
+void test_mips_LWL(mips_cpu_h state, mips_mem_h mem, FILE* err_log);
+void test_mips_LWR(mips_cpu_h state, mips_mem_h mem, FILE* err_log);
 void test_mips_SB(mips_cpu_h state, mips_mem_h mem, FILE* err_log);
 void test_mips_SH(mips_cpu_h state, mips_mem_h mem, FILE* err_log);
+void test_mips_SW(mips_cpu_h state, mips_mem_h mem, FILE* err_log);
 
 mips_error set_step_read(mips_cpu_h state,
 	const uint32_t& reg1,
@@ -97,87 +102,107 @@ mips_error set_step_read(mips_cpu_h state,
 	uint32_t& regRead_v,
 	mips_mem_h mem);
 
-int main(){
+int main(int argc, char *argv[]){
 
 	mips_mem_h mem = mips_mem_create_ram(1024, 4);
 	mips_cpu_h cpu = mips_cpu_create(mem);
 
 	int debug;
 	FILE* file_h = NULL;
-	//cout << "Set Debug level: " << endl;
-	//cin >> debug;
-	//if (debug > 0){
-	//	string filename;
-	//	cout << "Input file name for output / stderr / stdout, (if file not found it will be created)" << endl;
-	//	cin >> filename;
-	//	if (filename == "stderr"){
-	//		file_h = stderr;
-	//	}
-	//	else if (filename == "stdout"){
-	//		file_h = stdout;
-	//	}
-	//	else{
-	//		file_h = fopen(filename.c_str(), "w");
-	//	}
-	//}
-
-	debug = 0;
-	file_h = stdout;
-	FILE* err_log_h = stdout/*fopen("err_log.txt", "w")*/;
+	FILE* err_log_h = NULL;
+	if (argc != 1){
+		cout << "Set Debug level: " << endl;
+		cin >> debug;
+		if (debug > 0){
+			string filename;
+			cout << "Input file name for DEBUG output / stderr / stdout, (if file not found it will be created)" << endl;
+			cin >> filename;
+			if (filename == "stderr"){
+				file_h = stderr;
+			}
+			else if (filename == "stdout"){
+				file_h = stdout;
+			}
+			else{
+				file_h = fopen(filename.c_str(), "w");
+			}
+			cout << "Input file name for ERROR LOG output / stderr / stdout, (if file not found it will be created)" << endl;
+			cin >> filename;
+			if (filename == "stderr"){
+				err_log_h = stderr;
+			}
+			else if (filename == "stdout"){
+				err_log_h = stdout;
+			}
+			else{
+				file_h = fopen(filename.c_str(), "w");
+			}
+		}
+	}
+	else{
+		debug = 0;
+		file_h = stdout;
+		err_log_h = stdout;
+	}
+	//FILE* err_log_h = stdout/*fopen("err_log.txt", "w")*/;
 	mips_cpu_set_debug_level(cpu, debug, file_h);
 
 	mips_test_begin_suite();
-	//test_mips_SLTU(cpu, mem, err_log_h);
-	//test_mips_SLT(cpu, mem, err_log_h);
-	//test_mips_SLTI(cpu, mem, err_log_h);
-	//test_mips_SLTIU(cpu, mem, err_log_h);
-	//test_mips_LUI(cpu, mem, err_log_h);
-	//test_mips_SLL(cpu, mem, err_log_h);
-	//test_mips_SRL(cpu, mem, err_log_h);
-	//test_mips_SRLV(cpu, mem, err_log_h);
-	//test_mips_SLLV(cpu, mem, err_log_h);
-	//test_mips_SRAV(cpu, mem, err_log_h);
-	//test_mips_SRA(cpu, mem, err_log_h);
-	//test_mips_ADD(cpu, mem, err_log_h);
-	//test_mips_ADDI(cpu, mem, err_log_h);
-	//test_mips_ADDIU(cpu, mem, err_log_h);
-	//test_mips_ANDI(cpu, mem, err_log_h);
-	//test_mips_ORI(cpu, mem, err_log_h);
-	//test_mips_XORI(cpu, mem, err_log_h);
-	//test_mips_SUB(cpu, mem, err_log_h);
-	//test_mips_ADDU(cpu, mem, err_log_h);
-	//test_mips_SUBU(cpu, mem, err_log_h);
-	//test_mips_AND(cpu, mem, err_log_h);
-	//test_mips_OR(cpu, mem, err_log_h);
-	//test_mips_XOR(cpu, mem, err_log_h);
-	//test_mips_J(cpu, mem, err_log_h);
-	//test_mips_JR(cpu, mem, err_log_h);
-	//test_mips_BLTZ(cpu, mem, err_log_h);
-	//test_mips_BLEZ(cpu, mem, err_log_h);
-	//test_mips_BEQ(cpu, mem, err_log_h);
-	//test_mips_BNE(cpu, mem, err_log_h);
-	//test_mips_MF_MT_HI_LO(cpu, mem, err_log_h);
-	//test_mips_MULTU(cpu, mem, err_log_h);
-	//test_mips_MULT(cpu, mem, err_log_h);
-	//test_mips_DIVU(cpu, mem, err_log_h);
-	//test_mips_BGTZ(cpu, mem, err_log_h);
-	//test_mips_BGEZ(cpu, mem, err_log_h);
-	//test_mips_BLTZAL(cpu, mem, err_log_h);
-	//test_mips_BGEZAL(cpu, mem, err_log_h);
-	//test_mips_JAL(cpu, mem, err_log_h);
-	//test_mips_JALR(cpu, mem, err_log_h);
-	//test_mips_LB(cpu, mem, err_log_h);
-	//test_mips_LUI(cpu, mem, err_log_h);
-	//test_mips_LBU(cpu, mem, err_log_h);
+	test_mips_SLTU(cpu, mem, err_log_h);
+	test_mips_SLT(cpu, mem, err_log_h);
+	test_mips_SLTI(cpu, mem, err_log_h);
+	test_mips_SLTIU(cpu, mem, err_log_h);
+	test_mips_LUI(cpu, mem, err_log_h);
+	test_mips_SLL(cpu, mem, err_log_h);
+	test_mips_SRL(cpu, mem, err_log_h);
+	test_mips_SRLV(cpu, mem, err_log_h);
+	test_mips_SLLV(cpu, mem, err_log_h);
+	test_mips_SRAV(cpu, mem, err_log_h);
+	test_mips_SRA(cpu, mem, err_log_h);
+	test_mips_ADD(cpu, mem, err_log_h);
+	test_mips_ADDI(cpu, mem, err_log_h);
+	test_mips_ADDIU(cpu, mem, err_log_h);
+	test_mips_ANDI(cpu, mem, err_log_h);
+	test_mips_ORI(cpu, mem, err_log_h);
+	test_mips_XORI(cpu, mem, err_log_h);
+	test_mips_SUB(cpu, mem, err_log_h);
+	test_mips_ADDU(cpu, mem, err_log_h);
+	test_mips_SUBU(cpu, mem, err_log_h);
+	test_mips_AND(cpu, mem, err_log_h);
+	test_mips_OR(cpu, mem, err_log_h);
+	test_mips_XOR(cpu, mem, err_log_h);
+	test_mips_J(cpu, mem, err_log_h);
+	test_mips_JR(cpu, mem, err_log_h);
+	test_mips_BLTZ(cpu, mem, err_log_h);
+	test_mips_BLEZ(cpu, mem, err_log_h);
+	test_mips_BEQ(cpu, mem, err_log_h);
+	test_mips_BNE(cpu, mem, err_log_h);
+	test_mips_MF_MT_HI_LO(cpu, mem, err_log_h);
+	test_mips_MULTU(cpu, mem, err_log_h);
+	test_mips_MULT(cpu, mem, err_log_h);
+	test_mips_DIVU(cpu, mem, err_log_h);
+	test_mips_DIV(cpu, mem, err_log_h);
+	test_mips_BGTZ(cpu, mem, err_log_h);
+	test_mips_BGEZ(cpu, mem, err_log_h);
+	test_mips_BLTZAL(cpu, mem, err_log_h);
+	test_mips_BGEZAL(cpu, mem, err_log_h);
+	test_mips_JAL(cpu, mem, err_log_h);
+	test_mips_JALR(cpu, mem, err_log_h);
+	test_mips_LB(cpu, mem, err_log_h);
+	test_mips_LUI(cpu, mem, err_log_h);
+	test_mips_LBU(cpu, mem, err_log_h);
 	test_mips_LHU(cpu, mem, err_log_h);
 	test_mips_LH(cpu, mem, err_log_h);
 	test_mips_SB(cpu, mem, err_log_h);
 	test_mips_SH(cpu, mem, err_log_h);
+	test_mips_SW(cpu, mem, err_log_h);
+	test_mips_LW(cpu, mem, err_log_h);
+	test_mips_LWL(cpu, mem, err_log_h);
+	test_mips_LWR(cpu, mem, err_log_h);
 	mips_test_end_suite();
 
 	fclose(err_log_h);
-
-	cin.get();
+	fclose(file_h);
 
 	return 0;
 }
@@ -2692,7 +2717,27 @@ void test_mips_MF_MT_HI_LO(mips_cpu_h state, mips_mem_h mem, FILE* err_log){
 
 	//Test MTHI and MFHI
 
-	//Set HI to 3
+
+	//set rd to HI, check if 3 - testing MFHI
+	testId = mips_test_begin_test("MFHI");
+	rs = 1;
+	rs_v = 3;
+	rd = 0;
+	rt = 0;
+	sa = 0;
+	instr = R_type_instr(rs, rt, rd, sa, 17);
+	err = set_step_read(state, rs, rs_v, 33, 0, instr, 33, rd_v, mem);
+	success = (err == mips_Success);
+
+	rs = 0;
+	rd = 4;
+	instr = R_type_instr(rs, rt, rd, sa, 16);
+	err = set_step_read(state, 33, 0, 33, 0, instr, rd, rd_v, mem);
+	success = success && (err == mips_Success) && (rd_v == 3);
+	mips_test_end_test(testId, success, "MFHI success, correct value");
+	if (!success) fprintf(err_log, "MFHI success, correct value  FAILED \n");
+
+	//set rd to HI, check if 3 - testing MTHI
 	testId = mips_test_begin_test("MTHI");
 	rs = 1;
 	rs_v = 3;
@@ -2700,26 +2745,17 @@ void test_mips_MF_MT_HI_LO(mips_cpu_h state, mips_mem_h mem, FILE* err_log){
 	rt = 0;
 	sa = 0;
 	instr = R_type_instr(rs, rt, rd, sa, 17);
-	err = set_step_read(state, rs, rs_v, 33, 0, instr, 33, rd, mem);
-	success = err == mips_Success;
-	mips_test_end_test(testId, success, "MTHI success");
-	if (!success) fprintf(err_log, "MTHI success  FAILED \n");
+	err = set_step_read(state, rs, rs_v, 33, 0, instr, 33, rd_v, mem);
+	success = (err == mips_Success);
 
-	//set rd to HI, check if 3
-	testId = mips_test_begin_test("MFHI");
 	rs = 0;
-	rd = 1;
-	rt = 0;
-	sa = 0;
+	rd = 5;
 	instr = R_type_instr(rs, rt, rd, sa, 16);
 	err = set_step_read(state, 33, 0, 33, 0, instr, rd, rd_v, mem);
-	success = (err == mips_Success) && (rd_v == 3);
-	mips_test_end_test(testId, success, "MFHI success, correct value");
-	if (!success) fprintf(err_log, "MFHI success, correct value  FAILED \n");
-	testId = mips_test_begin_test("MTHI");
-	success = rd_v == 3;
-	mips_test_end_test(testId, success, "MTHI success");
-	if (!success) fprintf(err_log, "MTHI success  FAILED \n");
+	success = success && (err == mips_Success) && (rd_v == 3);
+	mips_test_end_test(testId, success, "MTHI success, correct value");
+	if (!success) fprintf(err_log, "MTHI success, correct value  FAILED \n");
+
 
 	//set rd=0 to HI, check remains 0
 	testId = mips_test_begin_test("MFHI");
@@ -2733,10 +2769,61 @@ void test_mips_MF_MT_HI_LO(mips_cpu_h state, mips_mem_h mem, FILE* err_log){
 	mips_test_end_test(testId, success, "MFHI cannot change $0");
 	if (!success) fprintf(err_log, "MFHI cannot change $0  FAILED \n");
 
+	//set rd to LO, check if 3 - testing MFLO
+	testId = mips_test_begin_test("MFLO");
+	rs = 1;
+	rd = 0;
+	rs_v = 3;
+	rt = 0;
+	sa = 0;
+	instr = R_type_instr(rs, rt, rd, sa, 19);
+	err = set_step_read(state, rs, rs_v, 33, 0, instr, 33, rd_v, mem);
+	success = (err == mips_Success);
+
+	rd = 2;
+	rs = 0;
+	instr = R_type_instr(rs, rt, rd, sa, 18);
+	err = set_step_read(state, 33, 0, 33, 0, instr, rd, rd_v, mem);
+	success = success && (err == mips_Success) && (rd_v == 3);
+	mips_test_end_test(testId, success, "MFLO success, correct value");
+	if (!success) fprintf(err_log, "MFLO success, correct value  FAILED \n");
+
+	//set rd to LO, check if 3 - testing MTLO
+	testId = mips_test_begin_test("MTLO");
+	rs = 1;
+	rd = 0;
+	rs_v = 3;
+	rt = 0;
+	sa = 0;
+	instr = R_type_instr(rs, rt, rd, sa, 19);
+	err = set_step_read(state, rs, rs_v, 33, 0, instr, 33, rd_v, mem);
+	success = (err == mips_Success);
+
+	rd = 2;
+	rs = 0;
+	instr = R_type_instr(rs, rt, rd, sa, 18);
+	err = set_step_read(state, 33, 0, 33, 0, instr, rd, rd_v, mem);
+	success = success && (err == mips_Success) && (rd_v == 3);
+	mips_test_end_test(testId, success, "MTLO success, correct value");
+	if (!success) fprintf(err_log, "MTLO success, correct value  FAILED \n");
+
+
+	//set rd=0 to LO, check remains 0
+	testId = mips_test_begin_test("MFLO");
+	rs = 0;
+	rd = 0;
+	rt = 0;
+	sa = 0;
+	instr = R_type_instr(rs, rt, rd, sa, 18);
+	err = set_step_read(state, 33, 0, 33, 0, instr, rd, rd_v, mem);
+	success = (err == mips_Success) && (rd_v == 0);
+	mips_test_end_test(testId, success, "MFLO cannot change $0");
+	if (!success) fprintf(err_log, "MFLO cannot change $0  FAILED \n");
+
 }
 
 void test_mips_MULTU(mips_cpu_h state, mips_mem_h mem, FILE* err_log){
-	//MULT - R-type - Function 0x19 / d25
+	//MULTU - R-type - Function 0x19 / d25
 
 	//Test 1+2 Fail on rd!=0 or sa!=0
 	uint32_t rs = 0;
@@ -3042,11 +3129,19 @@ void test_mips_DIV(mips_cpu_h state, mips_mem_h mem, FILE* err_log){
 	if (!success) fprintf(err_log, "DIV 0x7*3=HI(0x1)+LO(0x2)  FAILED \n");
 
 	//Test 4+5 signed division with remainder (- / + = -)
-	/*Remainer must staisfy (a/b)*b+remainder*b=a
+	/*?????Remainer???
+	
+	Option 1
+	must staisfy (a/b)*b+remainder*b=a
 	Therefore:
 	a(+), b(-), remainder(-)
 	a(-), b(+), remainder(+)
 	a(-), b(-), remainder(+)
+
+	Option 2
+	sign of % = sign of a in a%b
+
+	Option 2 was adopted because of the answer to the issue with an example of a simulator
 	*/
 	testId = mips_test_begin_test("DIV");
 	rs = 1;
@@ -3072,9 +3167,9 @@ void test_mips_DIV(mips_cpu_h state, mips_mem_h mem, FILE* err_log){
 	testId = mips_test_begin_test("DIV");
 	instr = R_type_instr(0, 0, rd, 0, 16);
 	err = set_step_read(state, 33, rs_v, 33, rt_v, instr, rd, rd_v, mem);
-	success = success && (err == mips_Success) && (rd_v == 1);
-	mips_test_end_test(testId, success, "-7/3=HI(0x1)");
-	if (!success) fprintf(err_log, "-7/3=HI(0x1)  FAILED \n");
+	success = success && (err == mips_Success) && (rd_v == -1);
+	mips_test_end_test(testId, success, "-7/3=HI(0xFFFFFFFF)");
+	if (!success) fprintf(err_log, "-7/3=HI(0xFFFFFFFF)  FAILED \n");
 
 	//Test 6+7 signed division with remainder (- / - = +)
 	testId = mips_test_begin_test("DIV");
@@ -3088,23 +3183,35 @@ void test_mips_DIV(mips_cpu_h state, mips_mem_h mem, FILE* err_log){
 	err = set_step_read(state, rs, rs_v, rt, rt_v, instr, 33, rd_v, mem);
 	success = (err == mips_Success);
 
-	//Read LO
+	//Read HI
 	rd = 3;
-	instr = R_type_instr(0, 0, rd, 0, 18);
+	instr = R_type_instr(0, 0, rd, 0, 16);
 	err = set_step_read(state, 33, rs_v, 33, rt_v, instr, rd, rd_v, mem);
-	success = success && (err == mips_Success) && (rd_v == 2);
-	success = success && (err == mips_Success) && (rd_v == 1);
-	mips_test_end_test(testId, success, "-7*-3=HI(0x1)");
+	success = success && (err == mips_Success) && (rd_v == -1);
+	mips_test_end_test(testId, success, "-7*-3=HI(0xFFFFFFFF)");
 	if (!success) fprintf(err_log, "-7*-3=HI(0x1)  FAILED \n");
 
-	//Read HI
+	//Read LO
 	testId = mips_test_begin_test("DIV");
-	instr = R_type_instr(0, 0, rd, 0, 16);
+	instr = R_type_instr(0, 0, rd, 0, 18);
 	err = set_step_read(state, 33, rs_v, 33, rt_v, instr, rd, rd_v, mem);
 	success = success && (err == mips_Success) && (rd_v == 2);
 	mips_test_end_test(testId, success, "-1*-2=LO(0x2)");
 	if (!success) fprintf(err_log, "-1*-2=LO(0x2)  FAILED \n");
 
+	//Divide by 0 doesnt crash
+	testId = mips_test_begin_test("DIV");
+	rs = 1;
+	rt = 2;
+	rs_v = -7;
+	rt_v = 0;
+	rd = 0;
+	sa = 0;
+	instr = R_type_instr(rs, rt, rd, sa, 26);
+	err = set_step_read(state, rs, rs_v, rt, rt_v, instr, 33, rd_v, mem);
+	success = (err == mips_Success);
+	mips_test_end_test(testId, success, "Divide by 0");
+	if (!success) fprintf(err_log, "Divide by 0  FAILED \n");
 }
 
 void test_mips_DIVU(mips_cpu_h state, mips_mem_h mem, FILE* err_log){
@@ -3210,7 +3317,7 @@ void test_mips_DIVU(mips_cpu_h state, mips_mem_h mem, FILE* err_log){
 }
 
 void test_mips_LB(mips_cpu_h state, mips_mem_h mem, FILE* err_log){
-	//SB - I-type - Opcode 0x20 / d32
+	//LB - I-type - Opcode 0x20 / d32
 
 	//Test 1 - Functionality (ADDR fom 0x90 to 0x93)
 	uint32_t rs = 1;
@@ -3236,11 +3343,11 @@ void test_mips_LB(mips_cpu_h state, mips_mem_h mem, FILE* err_log){
 	instr = I_type_instr(32, rs, rt, imm);
 
 	for (int i = 0; i <= 3; i++){
-		testId = mips_test_begin_test("SB");
+		testId = mips_test_begin_test("LB");
 		err = set_step_read(state, rs, rs_v, 33, 0, instr, rt, rt_v, mem);
 		success = (err == mips_Success) && (rt_v == word[i]);
-		mips_test_end_test(testId, success, "SB byte 0 - 3");
-		if (!success) fprintf(err_log, "SB addr 0x%08x  FAILED \n", (0x60 + i));
+		mips_test_end_test(testId, success, "LB byte 0 - 3");
+		if (!success) fprintf(err_log, "LB addr 0x%08x  FAILED \n", (0x60 + i));
 		rs_v++;
 	}
 
@@ -3248,23 +3355,23 @@ void test_mips_LB(mips_cpu_h state, mips_mem_h mem, FILE* err_log){
 	rs_v = 80;
 	rt = 0;
 	I_type_instr(32, rs, rt, imm);
-	testId = mips_test_begin_test("SB");
+	testId = mips_test_begin_test("LB");
 	err = set_step_read(state, rs, rs_v, 33, 0, instr, rt, rt_v, mem);
 	success = (err == mips_Success) && (rt_v == 0);
-	mips_test_end_test(testId, success, "SB byte to $0 no change");
-	if (!success) fprintf(err_log, "SB byte to $0 no change  FAILED \n");
+	mips_test_end_test(testId, success, "LB byte to $0 no change");
+	if (!success) fprintf(err_log, "LB byte to $0 no change  FAILED \n");
 
-	//Test 3 SB sign extends
+	//Test 3 LB sign extends
 	rs_v = 80;
 	word[0] = 0xFF;
 	mips_mem_write(mem, 0x60, 4, word);
 	rt = 2;
 	I_type_instr(32, rs, rt, imm);
-	testId = mips_test_begin_test("SB");
+	testId = mips_test_begin_test("LB");
 	err = set_step_read(state, rs, rs_v, 33, 0, instr, rt, rt_v, mem);
 	success = (err == mips_Success) && (rt_v == -1);
-	mips_test_end_test(testId, success, "SB sign extends");
-	if (!success) fprintf(err_log, "SB sign extends  FAILED \n");
+	mips_test_end_test(testId, success, "LB sign extends");
+	if (!success) fprintf(err_log, "LB sign extends  FAILED \n");
 }
 
 void test_mips_LBU(mips_cpu_h state, mips_mem_h mem, FILE* err_log){
@@ -3483,9 +3590,9 @@ void test_mips_SH(mips_cpu_h state, mips_mem_h mem, FILE* err_log){
 	//Test 1 - Functionality Upper Half
 	uint32_t rs = 1;
 	uint32_t rt = 2;
-	uint32_t rs_v = 80;
+	uint32_t rs_v = 0x60;
 	uint32_t rt_v = 0x12345678;
-	uint32_t imm = 16;
+	uint32_t imm = 0;
 	uint32_t instr;
 	mips_error err;
 	int testId;
@@ -3500,20 +3607,20 @@ void test_mips_SH(mips_cpu_h state, mips_mem_h mem, FILE* err_log){
 	instr = I_type_instr(41, rs, rt, imm);
 
 	testId = mips_test_begin_test("SH");
-	err = set_step_read(state, rs, rs_v, 33, 0, instr, rt, rt_v, mem);
+	err = set_step_read(state, rs, rs_v, rt, rt_v, instr, rt, rt_v, mem);
 	mips_mem_read(mem, 0x60, 4, word);
-	success = (err == mips_Success) && (word[3] == 0) && (word[2] == 0) && (word[1] == 0x56) && (word[1] == 0x78);
+	success = (err == mips_Success) && (word[3] == 0) && (word[2] == 0) && (word[1] == 0x78) && (word[0] == 0x56);
 	mips_test_end_test(testId, success, "SH upper half");
 	if (!success) fprintf(err_log, "SH upper half \n");
 
 	//Test 2 Lower half
-	rs_v = 82;
+	rs_v = 0x62;
 	testId = mips_test_begin_test("SH");
-	err = set_step_read(state, rs, rs_v, 33, 0, instr, rt, rt_v, mem);
+	err = set_step_read(state, rs, rs_v, rt, rt_v, instr, rt, rt_v, mem);
 	mips_mem_read(mem, 0x60, 4, word);
-	success = (err == mips_Success) && (word[3] == 56) && (word[2] == 78) && (word[1] == 0x56) && (word[1] == 0x78);
-	mips_test_end_test(testId, success, "SH upper half");
-	if (!success) fprintf(err_log, "SH uper half\n");
+	success = (err == mips_Success) && (word[3] == 0x78) && (word[2] == 0x56) && (word[1] == 0x78) && (word[0] == 0x56);
+	mips_test_end_test(testId, success, "SH lower half");
+	if (!success) fprintf(err_log, "SH lower half\n");
 
 	//Test 43 Invalid alignment
 	rs_v = 81;
@@ -3524,6 +3631,309 @@ void test_mips_SH(mips_cpu_h state, mips_mem_h mem, FILE* err_log){
 	success = (err != mips_Success);
 	mips_test_end_test(testId, success, "SH address error");
 	if (!success) fprintf(err_log, "SH Address error  FAILED \n");
+
+}
+
+void test_mips_SW(mips_cpu_h state, mips_mem_h mem, FILE* err_log){
+	//SW - I-type - Opcode 0x2B / d43
+
+	//Test 1 - Functionality Upper Half
+	uint32_t rs = 1;
+	uint32_t rt = 2;
+	uint32_t rs_v = 0x60;
+	uint32_t rt_v = 0x12345678;
+	uint32_t imm = 0;
+	uint32_t instr;
+	mips_error err;
+	int testId;
+	bool success;
+	uint8_t word[4];
+	word[3] = 0;
+	word[2] = 0;
+	word[1] = 0;
+	word[0] = 0;
+	mips_mem_write(mem, 0x60, 4, word);
+
+	//Test 1 Functionality
+
+	instr = I_type_instr(43, rs, rt, imm);
+
+	testId = mips_test_begin_test("SW");
+	err = set_step_read(state, rs, rs_v, rt, rt_v, instr, rt, rt_v, mem);
+	mips_error err2 = mips_mem_read(mem, 0x60, 4, word);
+	success = (err2 == mips_Success) && (err == mips_Success) && (word[3] == 0x78) && (word[2] == 0x56) && (word[1] == 0x34) && (word[0] == 0x12);
+	mips_test_end_test(testId, success, "SW funcionality positive imm");
+	if (!success) fprintf(err_log, "SW funcionality positive imm \n");
+
+	//Test 2 Negative imm
+	word[3] = 0;
+	word[2] = 0;
+	word[1] = 0;
+	word[0] = 0;
+	imm = -4;
+	mips_mem_write(mem, (0x60 - 4), 4, word);
+	instr = I_type_instr(43, rs, rt, imm);
+
+	testId = mips_test_begin_test("SW");
+	err = set_step_read(state, rs, rs_v, rt, rt_v, instr, rt, rt_v, mem);
+	err2 = mips_mem_read(mem, (0x60 - 4), 4, word);
+	success = (err2 == mips_Success) && (err == mips_Success) && (word[3] == 0x78) && (word[2] == 0x56) && (word[1] == 0x34) && (word[0] == 0x12);
+	mips_test_end_test(testId, success, "SW funcionality negative imm");
+	if (!success) fprintf(err_log, "SW funcionality negative imm \n");
+
+	//Test 43 Invalid alignment
+	rs_v = 81;
+	rt = 3;
+	I_type_instr(43, rs, rt, imm);
+	testId = mips_test_begin_test("SW");
+	err = set_step_read(state, rs, rs_v, rt, 0, instr, rt, rt_v, mem);
+	success = (err != mips_Success);
+	mips_test_end_test(testId, success, "SW address error");
+	if (!success) fprintf(err_log, "SW Address error  FAILED \n");
+
+}
+
+void test_mips_LW(mips_cpu_h state, mips_mem_h mem, FILE* err_log){
+	//LW - I-type - Opcode 0x23 / d35
+
+	//Test 1 - Functionality Upper Half
+	uint32_t rs = 1;
+	uint32_t rt = 2;
+	uint32_t rs_v = 0x60;
+	uint32_t rt_v = 0x0;
+	uint32_t imm = 0;
+	uint32_t instr;
+	mips_error err;
+	int testId;
+	bool success;
+	uint8_t word[4];
+	word[3] = 0x78;
+	word[2] = 0x56;
+	word[1] = 0x34;
+	word[0] = 0x12;
+	mips_mem_write(mem, 0x60, 4, word);
+
+	//Test 1 Functionality
+	instr = I_type_instr(35, rs, rt, imm);
+
+	testId = mips_test_begin_test("LW");
+	err = set_step_read(state, rs, rs_v, rt, rt_v, instr, rt, rt_v, mem);
+	success = (err == mips_Success) && (rt_v = 0x12345678);
+	mips_test_end_test(testId, success, "LW funcionality positive imm");
+	if (!success) fprintf(err_log, "LW funcionality positive imm \n");
+
+	//Test 2 Negative imm
+	imm = -4;
+	mips_mem_write(mem, (0x60 - 4), 4, word);
+	instr = I_type_instr(35, rs, rt, imm);
+
+	testId = mips_test_begin_test("LW");
+	err = set_step_read(state, rs, rs_v, rt, rt_v, instr, rt, rt_v, mem);
+	success = (err == mips_Success) && (rt_v = 0x12345678);
+	mips_test_end_test(testId, success, "LW funcionality negative imm");
+	if (!success) fprintf(err_log, "LW funcionality negative imm \n");
+
+	//Test 3 Invalid alignment
+	rs_v = 81;
+	rt = 3;
+	rt_v = 0;
+	I_type_instr(35, rs, rt, imm);
+	testId = mips_test_begin_test("LW");
+	err = set_step_read(state, rs, rs_v, rt, rt_v, instr, rt, rt_v, mem);
+	success = (err != mips_Success)&&(rt_v == 0);
+	mips_test_end_test(testId, success, "LW address error");
+	if (!success) fprintf(err_log, "LW Address error  FAILED \n");
+
+	//Test 4 modify $0
+	rs_v = 80;
+	rt = 0;
+	rt_v = 0;
+	I_type_instr(35, rs, rt, imm);
+	testId = mips_test_begin_test("LW");
+	err = set_step_read(state, rs, rs_v, rt, 0, instr, rt, rt_v, mem);
+	success = (err == mips_Success) && (rt_v == 0);
+	mips_test_end_test(testId, success, "LW modify 0");
+	if (!success) fprintf(err_log, "LW  modify 0    FAILED \n");
+
+}
+
+void test_mips_LWL(mips_cpu_h state, mips_mem_h mem, FILE* err_log){
+	//LWL - I-type - Opcode 0x22 / d34
+
+	//Test 1 - Functionality Upper Half
+	uint32_t rs = 1;
+	uint32_t rt = 2;
+	uint32_t rs_v = 0x60;
+	uint32_t rt_v = 0xFFFFFFFF;
+	uint32_t imm = 0;
+	uint32_t instr;
+	mips_error err;
+	int testId;
+	bool success;
+	uint8_t word1[4];
+	word1[3] = 0x78;
+	word1[2] = 0x56;
+	word1[1] = 0x34;
+	word1[0] = 0x12;
+	mips_mem_write(mem, 0x60, 4, word1);
+	uint8_t word2[4];
+	word2[3] = 0x00;
+	word2[2] = 0xEF;
+	word2[1] = 0xCD;
+	word2[0] = 0xAB;
+	mips_mem_write(mem, 0x64, 4, word2);
+
+	//Test 1 Functionality byte address 0
+	instr = I_type_instr(34, rs, rt, imm);
+
+	testId = mips_test_begin_test("LWL");
+	err = set_step_read(state, rs, rs_v, rt, rt_v, instr, rt, rt_v, mem);
+	success = (err == mips_Success) && (rt_v = 0x12345678);
+	mips_test_end_test(testId, success, "LWL funcionality byte ADDR 0 imm");
+	if (!success) fprintf(err_log, "LWL funcionality byte ADDR 0 imm \n");
+
+	//Test 2 Functionality byte address 1
+	imm = 1;
+	instr = I_type_instr(34, rs, rt, imm);
+
+	testId = mips_test_begin_test("LWL");
+	err = set_step_read(state, rs, rs_v, rt, rt_v, instr, rt, rt_v, mem);
+	success = (err == mips_Success) && (rt_v = 0x345678FF);
+	mips_test_end_test(testId, success, "LWL funcionality byte ADDR 0 imm");
+	if (!success) fprintf(err_log, "LWL funcionality byte ADDR 0 imm \n");
+
+	//Test 3 Functionality byte address 2
+	imm = 2;
+	instr = I_type_instr(34, rs, rt, imm);
+
+	testId = mips_test_begin_test("LWL");
+	err = set_step_read(state, rs, rs_v, rt, rt_v, instr, rt, rt_v, mem);
+	success = (err == mips_Success) && (rt_v = 0x5678FFFF);
+	mips_test_end_test(testId, success, "LWL funcionality byte ADDR 2 imm");
+	if (!success) fprintf(err_log, "LWL funcionality byte ADDR 2 imm \n");
+
+	//Test 4 Functionality byte address 3
+	imm = 3;
+	instr = I_type_instr(34, rs, rt, imm);
+
+	testId = mips_test_begin_test("LWL");
+	err = set_step_read(state, rs, rs_v, rt, rt_v, instr, rt, rt_v, mem);
+	success = (err == mips_Success) && (rt_v = 0x78FFFFFF);
+	mips_test_end_test(testId, success, "LWL funcionality byte ADDR 3 imm");
+	if (!success) fprintf(err_log, "LWL funcionality byte ADDR 3 imm \n");
+
+	//Test 5 Negative imm
+	imm = -4;
+	mips_mem_write(mem, (0x60 - 4), 4, word1);
+	instr = I_type_instr(34, rs, rt, imm);
+
+	testId = mips_test_begin_test("LWL");
+	err = set_step_read(state, rs, rs_v, rt, rt_v, instr, rt, rt_v, mem);
+	success = (err == mips_Success) && (rt_v = 0x12345678);
+	mips_test_end_test(testId, success, "LWL funcionality negative imm");
+	if (!success) fprintf(err_log, "LWL funcionality negative imm \n");
+
+	//Test 5 modify $0
+	imm = 0;
+	rs_v = 80;
+	rt = 0;
+	rt_v = 0;
+	I_type_instr(34, rs, rt, imm);
+	testId = mips_test_begin_test("LWL");
+	err = set_step_read(state, rs, rs_v, rt, 0, instr, rt, rt_v, mem);
+	success = (err == mips_Success) && (rt_v == 0);
+	mips_test_end_test(testId, success, "LWL modify 0");
+	if (!success) fprintf(err_log, "LWL  modify 0    FAILED \n");
+
+}
+
+void test_mips_LWR(mips_cpu_h state, mips_mem_h mem, FILE* err_log){
+	//LWR - I-type - Opcode 0x26 / d38
+
+	//Test 1 - Functionality Upper Half
+	uint32_t rs = 1;
+	uint32_t rt = 2;
+	uint32_t rs_v = 0x60;
+	uint32_t rt_v = 0xFFFFFFFF;
+	uint32_t imm = 4;
+	uint32_t instr;
+	mips_error err;
+	int testId;
+	bool success;
+	uint8_t word1[4];
+	word1[3] = 0x78;
+	word1[2] = 0x56;
+	word1[1] = 0x34;
+	word1[0] = 0x12;
+	mips_mem_write(mem, 0x60, 4, word1);
+	uint8_t word2[4];
+	word2[3] = 0x00;
+	word2[2] = 0xEF;
+	word2[1] = 0xCD;
+	word2[0] = 0xAB;
+	mips_mem_write(mem, 0x64, 4, word2);
+
+	//Test 1 Functionality byte address 0
+	instr = I_type_instr(38, rs, rt, imm);
+
+	testId = mips_test_begin_test("LWR");
+	err = set_step_read(state, rs, rs_v, rt, rt_v, instr, rt, rt_v, mem);
+	success = (err == mips_Success) && (rt_v = 0xABCDEF00);
+	mips_test_end_test(testId, success, "LWR funcionality byte ADDR 0 imm");
+	if (!success) fprintf(err_log, "LWR funcionality byte ADDR 0 imm \n");
+
+	//Test 2 Functionality byte address 1
+	imm = 1;
+	instr = I_type_instr(38, rs, rt, imm);
+
+	testId = mips_test_begin_test("LWR");
+	err = set_step_read(state, rs, rs_v, rt, rt_v, instr, rt, rt_v, mem);
+	success = (err == mips_Success) && (rt_v = 0xFFABCDEF);
+	mips_test_end_test(testId, success, "LWR funcionality byte ADDR 0 imm");
+	if (!success) fprintf(err_log, "LWR funcionality byte ADDR 0 imm \n");
+
+	//Test 3 Functionality byte address 2
+	imm = 2;
+	instr = I_type_instr(38, rs, rt, imm);
+
+	testId = mips_test_begin_test("LWR");
+	err = set_step_read(state, rs, rs_v, rt, rt_v, instr, rt, rt_v, mem);
+	success = (err == mips_Success) && (rt_v = 0xFFFFABCD);
+	mips_test_end_test(testId, success, "LWR funcionality byte ADDR 2 imm");
+	if (!success) fprintf(err_log, "LWR funcionality byte ADDR 2 imm \n");
+
+	//Test 4 Functionality byte address 3
+	imm = 3;
+	instr = I_type_instr(38, rs, rt, imm);
+
+	testId = mips_test_begin_test("LWR");
+	err = set_step_read(state, rs, rs_v, rt, rt_v, instr, rt, rt_v, mem);
+	success = (err == mips_Success) && (rt_v = 0xFFFFFFAB);
+	mips_test_end_test(testId, success, "LWR funcionality byte ADDR 3 imm");
+	if (!success) fprintf(err_log, "LWR funcionality byte ADDR 3 imm \n");
+
+	//Test 5 Negative imm
+	imm = -4;
+	mips_mem_write(mem, (0x60 - 4), 4, word1);
+	instr = I_type_instr(38, rs, rt, imm);
+
+	testId = mips_test_begin_test("LWR");
+	err = set_step_read(state, rs, rs_v, rt, rt_v, instr, rt, rt_v, mem);
+	success = (err == mips_Success) && (rt_v = 0x12345678);
+	mips_test_end_test(testId, success, "LWR funcionality negative imm");
+	if (!success) fprintf(err_log, "LWR funcionality negative imm \n");
+
+	//Test 5 modify $0
+	imm = 0;
+	rs_v = 80;
+	rt = 0;
+	rt_v = 0;
+	I_type_instr(38, rs, rt, imm);
+	testId = mips_test_begin_test("LWR");
+	err = set_step_read(state, rs, rs_v, rt, 0, instr, rt, rt_v, mem);
+	success = (err == mips_Success) && (rt_v == 0);
+	mips_test_end_test(testId, success, "LWR modify 0");
+	if (!success) fprintf(err_log, "LWR  modify 0    FAILED \n");
 
 }
 

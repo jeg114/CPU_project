@@ -32,7 +32,7 @@ if that function is not included, behaviour undefined
 */
 uint32_t J_type_instr(std::string instr, uint32_t target);
 
-void to_small_Endi(const uint32_t Data, uint8_t* output);
+void test_word_to_big_mem(const uint32_t Data, uint8_t* output);
 
 uint32_t sign_extend18(uint32_t in);
 
@@ -64,6 +64,9 @@ void test_mips_MTHI(mips_cpu_h state, mips_mem_h mem);
 void test_mips_MFLO(mips_cpu_h state, mips_mem_h mem);
 void test_mips_MTLO(mips_cpu_h state, mips_mem_h mem);
 void test_mips_J(mips_cpu_h state, mips_mem_h mem);
+void test_mips_JR(mips_cpu_h state, mips_mem_h mem);
+void test_mips_JAL(mips_cpu_h state, mips_mem_h mem);
+void test_mips_JALR(mips_cpu_h state, mips_mem_h mem);
 void test_mips_BLTZ(mips_cpu_h state, mips_mem_h mem);
 void test_mips_BLTZAL(mips_cpu_h state, mips_mem_h mem);
 void test_mips_BLEZ(mips_cpu_h state, mips_mem_h mem);
@@ -74,6 +77,8 @@ void test_mips_BNE(mips_cpu_h state, mips_mem_h mem);
 void test_mips_BGTZ(mips_cpu_h state, mips_mem_h mem);
 void test_mips_MF_MT_HI_LO(mips_cpu_h state, mips_mem_h mem);
 void test_mips_MULTU(mips_cpu_h state, mips_mem_h mem);
+void test_mips_MULT(mips_cpu_h state, mips_mem_h mem);
+void test_mips_DIVU(mips_cpu_h state, mips_mem_h mem);
 
 mips_error set_step_read(mips_cpu_h state,
 	const uint32_t& reg1,
@@ -115,40 +120,45 @@ int main(){
 	mips_cpu_set_debug_level(cpu, debug, file_h);
 
 	mips_test_begin_suite();
-	//test_mips_SLTU(cpu, mem);
-	//test_mips_SLT(cpu, mem);
-	//test_mips_SLTI(cpu, mem);
-	//test_mips_SLTIU(cpu, mem);
-	//test_mips_LUI(cpu, mem);
-	//test_mips_SLL(cpu, mem);
-	//test_mips_SRL(cpu, mem);
-	//test_mips_SRLV(cpu, mem);
-	//test_mips_SLLV(cpu, mem);
-	//test_mips_SRAV(cpu, mem);
-	//test_mips_SRA(cpu, mem);
-	//test_mips_ADD(cpu, mem);
-	//test_mips_ADDI(cpu, mem);
-	//test_mips_ADDIU(cpu, mem);
-	//test_mips_ANDI(cpu, mem);
-	//test_mips_ORI(cpu, mem);
-	//test_mips_XORI(cpu, mem);
-	//test_mips_SUB(cpu, mem);
-	//test_mips_ADDU(cpu, mem);
-	//test_mips_SUBU(cpu, mem);
-	//test_mips_AND(cpu,mem);
-	//test_mips_OR(cpu, mem);
-	//test_mips_XOR(cpu, mem);
-	//test_mips_J(cpu,mem);
-	//test_mips_BLTZ(cpu, mem);
-	//test_mips_BLEZ(cpu, mem);
-	//test_mips_BEQ(cpu, mem);
-	//test_mips_BNE(cpu, mem);
+	test_mips_SLTU(cpu, mem);
+	test_mips_SLT(cpu, mem);
+	test_mips_SLTI(cpu, mem);
+	test_mips_SLTIU(cpu, mem);
+	test_mips_LUI(cpu, mem);
+	test_mips_SLL(cpu, mem);
+	test_mips_SRL(cpu, mem);
+	test_mips_SRLV(cpu, mem);
+	test_mips_SLLV(cpu, mem);
+	test_mips_SRAV(cpu, mem);
+	test_mips_SRA(cpu, mem);
+	test_mips_ADD(cpu, mem);
+	test_mips_ADDI(cpu, mem);
+	test_mips_ADDIU(cpu, mem);
+	test_mips_ANDI(cpu, mem);
+	test_mips_ORI(cpu, mem);
+	test_mips_XORI(cpu, mem);
+	test_mips_SUB(cpu, mem);
+	test_mips_ADDU(cpu, mem);
+	test_mips_SUBU(cpu, mem);
+	test_mips_AND(cpu,mem);
+	test_mips_OR(cpu, mem);
+	test_mips_XOR(cpu, mem);
+	test_mips_J(cpu,mem);
+	test_mips_JR(cpu, mem);
+	test_mips_BLTZ(cpu, mem);
+	test_mips_BLEZ(cpu, mem);
+	test_mips_BEQ(cpu, mem);
+	test_mips_BNE(cpu, mem);
 	test_mips_MF_MT_HI_LO(cpu, mem);
 	test_mips_MULTU(cpu, mem);
-	//test_mips_BGTZ(cpu, mem);
-	//test_mips_BGEZ(cpu, mem);
-	//test_mips_BLTZAL(cpu, mem);
-	//test_mips_BGEZAL(cpu, mem);
+	test_mips_MULT(cpu, mem);
+	test_mips_DIVU(cpu, mem);
+	test_mips_BGTZ(cpu, mem);
+	test_mips_BGEZ(cpu, mem);
+	test_mips_BLTZAL(cpu, mem);
+	test_mips_BGEZAL(cpu, mem);
+	test_mips_JAL(cpu, mem);
+	test_mips_JALR(cpu, mem);
 	mips_test_end_suite();
 
 	cin.get();
@@ -245,7 +255,7 @@ mips_error set_step_read(mips_cpu_h state,
 	mips_cpu_get_pc(state, &PC);
 
 	uint8_t buffer[4];
-	to_small_Endi(instr, buffer);
+	test_word_to_big_mem(instr, buffer);
 	err = mips_mem_write(mem, PC, 4, buffer);
 	if (err != mips_Success){
 		return err;
@@ -2013,22 +2023,167 @@ void test_mips_J(mips_cpu_h state, mips_mem_h mem){
 
 	//Set J instruction on PC = 0, PCN = 4
 	mips_error err = set_step_read(state, 32, 0, 33, 3, instr, 32, PC_after, mem);
-
-	//Execute delay slot instruction as NOP
-	uint8_t buffer[4];
-	to_small_Endi(R_type_instr(0, 0, 0, 0, 32), buffer);
-	err = mips_mem_write(mem, PC_after, 4, buffer);
-
-	if (err==mips_Success)
-	err = mips_cpu_step(state);
-
-	if (err == mips_Success)
-	err = mips_cpu_get_pc(state, &PC_after);
-
+	err = set_step_read(state, 33, 0, 33, 3, 0, 32, PC_after, mem);
 
 	//Check adress is as expected (top 4 bits pcn(4) = 0 +target(0) = 0
 	bool success = (err == mips_Success) && (PC_after == 0);
 	mips_test_end_test(testId, success, "Jump from PC 0, target 0");
+}
+
+void test_mips_JAL(mips_cpu_h state, mips_mem_h mem){
+	//JAL - J-type - Opcode 0x3 / d3
+
+	//Test1 - Functionality1 (Jump from known pc and pcN)
+	int testId = mips_test_begin_test("JAL");
+	uint32_t target = 0;
+	uint32_t PC_after;
+	uint32_t link;
+	uint32_t instr = J_type_instr(false, target);
+
+	//Set JAL instruction on PC = 0, PCN = 4
+	mips_error err = set_step_read(state, 32, 0, 33, 3, instr, 31, link, mem);
+
+	//Step with NOP
+	err = set_step_read(state, 33, 0, 33, 3, 0, 32, PC_after, mem);
+
+	//Check adress is as expected (top 4 bits pcn(4) = 0 + target(0) = 0
+	bool success = (err == mips_Success) && (PC_after == 0) && (link == 8);
+	mips_test_end_test(testId, success, "Jump and link from PC 0, target 0");
+}
+
+void test_mips_JALR(mips_cpu_h state, mips_mem_h mem){
+	//JALR - R-type - Opcode 0x9 / d9
+
+	//Test 1 - Invalid instruction
+	uint32_t rs = 1;
+	uint32_t rt = 0;
+	uint32_t rd = 2;
+	uint32_t rs_v;
+	uint32_t rd_v;
+	uint32_t sa = 0;
+	uint32_t instr;
+	mips_error err;
+	int testId;
+	for (int i = 0; i <= 1; i++){
+		if (i == 0){
+			rt = 1;
+			sa = 0;
+		}
+		else{
+			rt = 0;
+			sa = 1;
+		}
+		instr = R_type_instr(rs, rt, rd, sa, 9);
+		testId = mips_test_begin_test("JALR");
+		err = set_step_read(state, 33, 0, 33, 0, instr, 33, rd_v, mem);
+		mips_test_end_test(testId, err == mips_ExceptionInvalidInstruction, "JALR invalid /rt/sa");
+	}
+
+	//Test 2 - Functionality
+	testId = mips_test_begin_test("JALR");
+	uint32_t PC;
+	rs = 1;
+	rd = 2;
+	rs_v = 0x402AC0;
+	instr = R_type_instr(rs, 0, rd, 0, 9);
+	bool success;
+	err = set_step_read(state, rs, rs_v, 32, 0, instr, rd, rd_v, mem);
+	success = (err == mips_Success);
+	//Execute NOP and read PC
+	err = set_step_read(state, rs, rs_v, 33, 0, 0, 32, PC, mem);
+	mips_test_end_test(testId, success && (err == mips_Success) && (PC = 0x402AC0)&&(rd_v == 8), "JALR works");
+
+	//Test 2 - Functionality
+	testId = mips_test_begin_test("JALR");
+	rs = 1;
+	rd = 0;
+	rs_v = 0x402AC0;
+	instr = R_type_instr(rs, 0, 0, 0, 9);
+	err = set_step_read(state, rs, rs_v, 32, 0, instr, rd, rd_v, mem);
+	success = (err == mips_Success);
+	//Execute NOP and read PC
+	err = set_step_read(state, rs, rs_v, 33, 0, 0, 32, PC, mem);
+	mips_test_end_test(testId, success && (err == mips_Success) && (PC = 0x402AC0) && (rd_v == 0), "JALR rd=0 contents = 0");
+
+	//Test 3 - Unaligned jump
+	testId = mips_test_begin_test("JALR");
+	PC;
+	rs = 1;
+	rd = 2;
+	rs_v = 0x402AC1;
+	instr = R_type_instr(rs, 0, rd, 0, 9);
+	err = set_step_read(state, rs, rs_v, 32, 0, instr, rd, rd_v, mem);
+	success = (err == mips_Success);
+	//Execute NOP and read PC
+	err = set_step_read(state, rs, rs_v, 33, 0, 0, 32, PC, mem);
+	success = success && (PC == 0x402AC1) && (err == mips_Success);
+	err = mips_cpu_step(state);
+	mips_test_end_test(testId, success && (err != mips_Success) && (PC = 0x402AC1) && (rd_v == 8), "JALR unaligned address = JALR -> Delay_slot -> EXCEPTION");
+}
+
+void test_mips_JR(mips_cpu_h state, mips_mem_h mem){
+	//JR - R-type - Opcode 0x8 / d8
+
+	//Test 1 - Invalid instruction
+	uint32_t rs = 0;
+	uint32_t rt = 0;
+	uint32_t rd = 0;
+	uint32_t rs_v;
+	uint32_t rd_v;
+	uint32_t sa = 0;
+	uint32_t instr;
+	mips_error err;
+	int testId;
+	for (int i = 0; i <= 2; i++){
+		switch (i){
+		case 0:
+			rd = 0;
+			rt = 1;
+			sa = 0;
+			break;
+		case 1:
+			rd = 0;
+			rt = 0;
+			sa = 1;
+			break;
+		case 2:
+			rd = 1;
+			rt = 0;
+			sa = 0;
+			break;
+		}
+		instr = R_type_instr(rs, rt, rd, sa, 8);
+		testId = mips_test_begin_test("JR");
+		err = set_step_read(state, 33, 0, 33, 0, instr, 33, rd_v, mem);
+		mips_test_end_test(testId, err == mips_ExceptionInvalidInstruction, "JR invalid rd/rt/sa");
+	}
+
+	//Test 2 - Functionality
+	testId = mips_test_begin_test("JR");
+	uint32_t PC;
+	rs = 1;
+	rs_v = 0x402AC0;
+	instr = R_type_instr(rs, 0, 0, 0, 8);
+	bool success;
+	err = set_step_read(state, rs, rs_v, 33, 0, instr, 33, rd_v, mem);
+	success = (err == mips_Success);
+	//Execute NOP and read PC
+	err=set_step_read(state, rs, rs_v, 33, 0, 0, 32, PC, mem);
+	mips_test_end_test(testId, success && (err == mips_Success) && (PC = 0x402AC0), "JR works");
+
+	//Test 3 - Unaligned jump
+	testId = mips_test_begin_test("JR");
+	PC;
+	rs = 1;
+	rs_v = 0x402AC1;
+	instr = R_type_instr(rs, 0, 0, 0, 8);
+	err = set_step_read(state, rs, rs_v, 32, 0, instr, 33, rd_v, mem);
+	success = (err == mips_Success);
+	//Execute NOP and read PC
+	err = set_step_read(state, rs, rs_v, 33, 0, 0, 32, PC, mem);
+	success = success && (PC == 0x402AC1) && (err == mips_Success);
+	err = mips_cpu_step(state);
+	mips_test_end_test(testId, success && (err != mips_Success) && (PC = 0x402AC1), "JR unaligned address = JR -> Delay_slot -> EXCEPTION");
 }
 
 void test_mips_MF_MT_HI_LO(mips_cpu_h state, mips_mem_h mem){
@@ -2037,7 +2192,6 @@ void test_mips_MF_MT_HI_LO(mips_cpu_h state, mips_mem_h mem){
 	uint32_t rt = 0;
 	uint32_t rd = 1;
 	uint32_t rs_v;
-	uint32_t rt_v;
 	uint32_t rd_v;
 	uint32_t sa = 0;
 	uint32_t instr;
@@ -2090,7 +2244,7 @@ void test_mips_MF_MT_HI_LO(mips_cpu_h state, mips_mem_h mem){
 		instr = R_type_instr(rs, rt, rd, sa, 17);
 		testId = mips_test_begin_test("MTHI");
 		err = set_step_read(state, 33, 0, 33, 0, instr, 33, rd, mem);
-		mips_test_end_test(testId, err = mips_ExceptionInvalidInstruction, "MTHI invalid rd/rt/sa");
+		mips_test_end_test(testId, err == mips_ExceptionInvalidInstruction, "MTHI invalid rd/rt/sa");
 	}
 
 	//MFLO - R-type - Function 0x12 / d18
@@ -2116,7 +2270,7 @@ void test_mips_MF_MT_HI_LO(mips_cpu_h state, mips_mem_h mem){
 		instr = R_type_instr(rs, rt, rd, sa, 18);
 		testId = mips_test_begin_test("MFLO");
 		err = set_step_read(state, 33, 0, 33, 0, instr, 33, rd, mem);
-		mips_test_end_test(testId, err = mips_ExceptionInvalidInstruction, "MFLO invalid rs/rt/sa");
+		mips_test_end_test(testId, err == mips_ExceptionInvalidInstruction, "MFLO invalid rs/rt/sa");
 	}
 
 	//MTLO - R-type - Function 0x13 / d19
@@ -2142,7 +2296,7 @@ void test_mips_MF_MT_HI_LO(mips_cpu_h state, mips_mem_h mem){
 		instr = R_type_instr(rs, rt, rd, sa, 19);
 		testId = mips_test_begin_test("MTLO");
 		err = set_step_read(state, 33, 0, 33, 0, instr, 33, rd, mem);
-		mips_test_end_test(testId, err = mips_ExceptionInvalidInstruction, "MTLO invalid rs/rt/sa");
+		mips_test_end_test(testId, err == mips_ExceptionInvalidInstruction, "MTLO invalid rs/rt/sa");
 	}
 
 	//Only way of testing MF and MT instructions are using one after the other,
@@ -2191,7 +2345,7 @@ void test_mips_MULTU(mips_cpu_h state, mips_mem_h mem){
 	//Test 1+2 Fail on rd!=0 or sa!=0
 	uint32_t rs = 0;
 	uint32_t rt = 0;
-	uint32_t rd = 1;
+	uint32_t rd = 0;
 	uint32_t rs_v;
 	uint32_t rt_v;
 	uint32_t rd_v;
@@ -2216,6 +2370,7 @@ void test_mips_MULTU(mips_cpu_h state, mips_mem_h mem){
 		mips_test_end_test(testId, err = mips_ExceptionInvalidInstruction, "MULTU invalid rs/rt/sa");
 	}
 
+	//Test 3 32 bit unsigned multiplication
 	testId = mips_test_begin_test("MULTU");
 	rs = 1;
 	rt = 2;
@@ -2229,16 +2384,392 @@ void test_mips_MULTU(mips_cpu_h state, mips_mem_h mem){
 	rd = 3;
 	instr = R_type_instr(0, 0, rd, 0, 18);
 	err = set_step_read(state, 33, rs_v, 33, rt_v, instr, rd, rd_v, mem);
-	mips_test_end_test(testId, success && (err==mips_Success)&&(rd==6), "MULTU 3*2");
+	mips_test_end_test(testId, success && (err==mips_Success)&&(rd_v==6), "MULTU 3*2");
+
+	//Test 3 64 bit unsigned multiplication
+	testId = mips_test_begin_test("MULTU");
+	rs = 1;
+	rt = 2;
+	rs_v = 0x40000001;
+	rt_v = 4;
+	rd = 0;
+	sa = 0;
+	instr = R_type_instr(rs, rt, rd, sa, 25);
+	err = set_step_read(state, rs, rs_v, rt, rt_v, instr, 33, rd_v, mem);
+	success = (err == mips_Success);
+
+	//Read LO
+	rd = 3;
+	instr = R_type_instr(0, 0, rd, 0, 18);
+	err = set_step_read(state, 33, rs_v, 33, rt_v, instr, rd, rd_v, mem);
+	success = success && (err == mips_Success) && (rd_v == 4);
+	//Read HI
+	instr = R_type_instr(0, 0, rd, 0, 16);
+	err = set_step_read(state, 33, rs_v, 33, rt_v, instr, rd, rd_v, mem);
+	mips_test_end_test(testId, success && (err == mips_Success) && (rd_v == 1), "MULTU 0x40000001*4=HI(0x1)+LO(0x4)");
+
+	//Test 4 64 bit unsigned multiplication (check when bit31!=0 -> negative)
+	testId = mips_test_begin_test("MULTU");
+	rs = 1;
+	rt = 2;
+	rs_v = 0x80000000;
+	rt_v = 2;
+	rd = 0;
+	sa = 0;
+	instr = R_type_instr(rs, rt, rd, sa, 25);
+	err = set_step_read(state, rs, rs_v, rt, rt_v, instr, 33, rd_v, mem);
+	success = (err == mips_Success);
+
+	//Read LO
+	rd = 3;
+	instr = R_type_instr(0, 0, rd, 0, 18);
+	err = set_step_read(state, 33, rs_v, 33, rt_v, instr, rd, rd_v, mem);
+	success = success && (err == mips_Success) && (rd_v == 0);
+	//Read HI
+	instr = R_type_instr(0, 0, rd, 0, 16);
+	err = set_step_read(state, 33, rs_v, 33, rt_v, instr, rd, rd_v, mem);
+	mips_test_end_test(testId, success && (err == mips_Success) && (rd_v == 1), "0x80000000*2=HI(0x1)+LO(0x0)");
 
 }
 
-//MULTU - R-type - Function 0x2 / d2
-//MULT - R-type - Function 0x2 / d2
-//DIVU - R-type - Function 0x2 / d2
-//DIV - R-type - Function 0x2 / d2
+void test_mips_MULT(mips_cpu_h state, mips_mem_h mem){
+	//MULT - R-type - Function 0x18 / d24
 
-void to_small_Endi(const uint32_t Data, uint8_t* output){
+	//Test 1+2 Fail on rd!=0 or sa!=0
+	uint32_t rs = 0;
+	uint32_t rt = 0;
+	uint32_t rd = 0;
+	uint32_t rs_v;
+	uint32_t rt_v;
+	uint32_t rd_v;
+	uint32_t sa = 0;
+	uint32_t instr;
+	mips_error err;
+	int testId;
+	for (int i = 0; i <= 1; i++){
+		switch (i){
+		case 0:
+			rd = 1;
+			sa = 0;
+			break;
+		case 1:
+			rd = 0;
+			sa = 1;
+			break;
+		}
+		instr = R_type_instr(rs, rt, rd, sa, 24);
+		testId = mips_test_begin_test("MULT");
+		err = set_step_read(state, 33, 0, 33, 0, instr, 33, rd_v, mem);
+		mips_test_end_test(testId, err = mips_ExceptionInvalidInstruction, "MULT invalid rs/rt/sa");
+	}
+
+	//Test 3 32 bit unsigned multiplication
+	testId = mips_test_begin_test("MULT");
+	rs = 1;
+	rt = 2;
+	rs_v = 2;
+	rt_v = 3;
+	rd = 0;
+	sa = 0;
+	instr = R_type_instr(rs, rt, rd, sa, 24);
+	err = set_step_read(state, rs, rs_v, rt, rt_v, instr, 33, rd_v, mem);
+	bool success = (err == mips_Success);
+	rd = 3;
+	instr = R_type_instr(0, 0, rd, 0, 18);
+	err = set_step_read(state, 33, rs_v, 33, rt_v, instr, rd, rd_v, mem);
+	mips_test_end_test(testId, success && (err == mips_Success) && (rd_v == 6), "MULT 3*2");
+
+
+	//Test 3 64 bit unsigned multiplication
+	testId = mips_test_begin_test("MULT");
+	rs = 1;
+	rt = 2;
+	rs_v = 0x40000001;
+	rt_v = 4;
+	rd = 0;
+	sa = 0;
+	instr = R_type_instr(rs, rt, rd, sa, 24);
+	err = set_step_read(state, rs, rs_v, rt, rt_v, instr, 33, rd_v, mem);
+	success = (err == mips_Success);
+
+	//Read LO
+	rd = 3;
+	instr = R_type_instr(0, 0, rd, 0, 18);
+	err = set_step_read(state, 33, rs_v, 33, rt_v, instr, rd, rd_v, mem);
+	success = success && (err == mips_Success) && (rd_v == 4);
+	//Read HI
+	instr = R_type_instr(0, 0, rd, 0, 16);
+	err = set_step_read(state, 33, rs_v, 33, rt_v, instr, rd, rd_v, mem);
+	mips_test_end_test(testId, success && (err == mips_Success) && (rd_v == 1), "MULT 0x40000001*4=HI(0x1)+LO(0x4)");
+
+	//Test 5 64 bit signed multiplication  (- * + = -)
+	testId = mips_test_begin_test("MULT");
+	rs = 1;
+	rt = 2;
+	rs_v = -1;
+	rt_v = 2;
+	rd = 0;
+	sa = 0;
+	instr = R_type_instr(rs, rt, rd, sa, 24);
+	err = set_step_read(state, rs, rs_v, rt, rt_v, instr, 33, rd_v, mem);
+	success = (err == mips_Success);
+
+	//Read LO
+	rd = 3;
+	instr = R_type_instr(0, 0, rd, 0, 18);
+	err = set_step_read(state, 33, rs_v, 33, rt_v, instr, rd, rd_v, mem);
+	success = success && (err == mips_Success) && (rd_v == 0xFFFFFFFE);
+	//Read HI
+	instr = R_type_instr(0, 0, rd, 0, 16);
+	err = set_step_read(state, 33, rs_v, 33, rt_v, instr, rd, rd_v, mem);
+	mips_test_end_test(testId, success && (err == mips_Success) && (rd_v == 0xFFFFFFFF), "-1*2=HI(0xFFFFFFFF)+LO(0xFFFFFFFE)");
+
+	//Test 4 64 bit signed multiplication  (- * - = +)
+	testId = mips_test_begin_test("MULT");
+	rs = 1;
+	rt = 2;
+	rs_v = -1;
+	rt_v = -2;
+	rd = 0;
+	sa = 0;
+	instr = R_type_instr(rs, rt, rd, sa, 24);
+	err = set_step_read(state, rs, rs_v, rt, rt_v, instr, 33, rd_v, mem);
+	success = (err == mips_Success);
+
+	//Read LO
+	rd = 3;
+	instr = R_type_instr(0, 0, rd, 0, 18);
+	err = set_step_read(state, 33, rs_v, 33, rt_v, instr, rd, rd_v, mem);
+	success = success && (err == mips_Success) && (rd_v == 2);
+	//Read HI
+	instr = R_type_instr(0, 0, rd, 0, 16);
+	err = set_step_read(state, 33, rs_v, 33, rt_v, instr, rd, rd_v, mem);
+	mips_test_end_test(testId, success && (err == mips_Success) && (rd_v == 0), "-1*-2=HI(0x0)+LO(0x2)");
+
+}
+
+void test_mips_DIV(mips_cpu_h state, mips_mem_h mem){
+	//DIV - R-type - Function 0x1A / d26
+
+	//Test 1+2 Fail on rd!=0 or sa!=0
+	uint32_t rs = 0;
+	uint32_t rt = 0;
+	uint32_t rd = 0;
+	uint32_t rs_v;
+	uint32_t rt_v;
+	uint32_t rd_v;
+	uint32_t sa = 0;
+	uint32_t instr;
+	mips_error err;
+	int testId;
+	for (int i = 0; i <= 1; i++){
+		switch (i){
+		case 0:
+			rd = 1;
+			sa = 0;
+			break;
+		case 1:
+			rd = 0;
+			sa = 1;
+			break;
+		}
+		instr = R_type_instr(rs, rt, rd, sa, 26);
+		testId = mips_test_begin_test("DIV");
+		err = set_step_read(state, 33, 0, 33, 0, instr, 33, rd_v, mem);
+		mips_test_end_test(testId, err = mips_ExceptionInvalidInstruction, "DIV invalid rs/rt/sa");
+	}
+
+	//Test 3 32 bit unsigned division no remainder
+	testId = mips_test_begin_test("DIV");
+	rs = 1;
+	rt = 2;
+	rs_v = 4;
+	rt_v = 2;
+	rd = 0;
+	sa = 0;
+	instr = R_type_instr(rs, rt, rd, sa, 26);
+	err = set_step_read(state, rs, rs_v, rt, rt_v, instr, 33, rd_v, mem);
+	bool success = (err == mips_Success);
+	rd = 3;
+	instr = R_type_instr(0, 0, rd, 0, 18);
+	err = set_step_read(state, 33, rs_v, 33, rt_v, instr, rd, rd_v, mem);
+	mips_test_end_test(testId, success && (err == mips_Success) && (rd_v == 2), "DIV 4/2=2");
+
+
+	//Test 3 32 bit unsigned division with remainder
+	testId = mips_test_begin_test("DIV");
+	rs = 1;
+	rt = 2;
+	rs_v = 7;
+	rt_v = 3;
+	rd = 0;
+	sa = 0;
+	instr = R_type_instr(rs, rt, rd, sa, 26);
+	err = set_step_read(state, rs, rs_v, rt, rt_v, instr, 33, rd_v, mem);
+	success = (err == mips_Success);
+
+	//Read LO
+	rd = 3;
+	instr = R_type_instr(0, 0, rd, 0, 18);
+	err = set_step_read(state, 33, rs_v, 33, rt_v, instr, rd, rd_v, mem);
+	success = success && (err == mips_Success) && (rd_v == 2);
+	//Read HI
+	instr = R_type_instr(0, 0, rd, 0, 16);
+	err = set_step_read(state, 33, rs_v, 33, rt_v, instr, rd, rd_v, mem);
+	mips_test_end_test(testId, success && (err == mips_Success) && (rd_v == 1), "DIV 0x7*3=HI(0x1)+LO(0x2)");
+
+	//Test 4+5 signed division with remainder (- / + = -)
+	/*Remainer must staisfy (a/b)*b+remainder*b=a
+	Therefore:
+	a(+), b(-), remainder(-)
+	a(-), b(+), remainder(+)
+	a(-), b(-), remainder(+)
+	*/
+	testId = mips_test_begin_test("DIV");
+	rs = 1;
+	rt = 2;
+	rs_v = -7;
+	rt_v = 3;
+	rd = 0;
+	sa = 0;
+	instr = R_type_instr(rs, rt, rd, sa, 26);
+	err = set_step_read(state, rs, rs_v, rt, rt_v, instr, 33, rd_v, mem);
+	success = (err == mips_Success);
+
+	//Read LO
+	rd = 3;
+	instr = R_type_instr(0, 0, rd, 0, 18);
+	err = set_step_read(state, 33, rs_v, 33, rt_v, instr, rd, rd_v, mem);
+	success = success && (err == mips_Success) && (rd_v == 0xFFFFFFFE);
+	mips_test_end_test(testId, success && (err == mips_Success) && (rd_v == -2), "-7/3=LO(0xFFFFFFFE");
+
+	//Read HI
+	testId = mips_test_begin_test("DIV");
+	instr = R_type_instr(0, 0, rd, 0, 16);
+	err = set_step_read(state, 33, rs_v, 33, rt_v, instr, rd, rd_v, mem);
+	mips_test_end_test(testId, success && (err == mips_Success) && (rd_v == 1), "-7/3=HI(0x1)");
+
+	//Test 6+7 signed division with remainder (- / - = +)
+	testId = mips_test_begin_test("DIV");
+	rs = 1;
+	rt = 2;
+	rs_v = -7;
+	rt_v = -3;
+	rd = 0;
+	sa = 0;
+	instr = R_type_instr(rs, rt, rd, sa, 26);
+	err = set_step_read(state, rs, rs_v, rt, rt_v, instr, 33, rd_v, mem);
+	success = (err == mips_Success);
+
+	//Read LO
+	rd = 3;
+	instr = R_type_instr(0, 0, rd, 0, 18);
+	err = set_step_read(state, 33, rs_v, 33, rt_v, instr, rd, rd_v, mem);
+	success = success && (err == mips_Success) && (rd_v == 2);
+	mips_test_end_test(testId, success && (err == mips_Success) && (rd_v == 1), "-7*-3=HI(0x1)");
+
+	//Read HI
+	testId = mips_test_begin_test("DIV");
+	instr = R_type_instr(0, 0, rd, 0, 16);
+	err = set_step_read(state, 33, rs_v, 33, rt_v, instr, rd, rd_v, mem);
+	mips_test_end_test(testId, success && (err == mips_Success) && (rd_v == 2), "-1*-2=LO(0x2)");
+
+}
+
+void test_mips_DIVU(mips_cpu_h state, mips_mem_h mem){
+	//MULT - R-type - Function 0x1B / d27
+
+	//Test 1+2 Fail on rd!=0 or sa!=0
+	uint32_t rs = 0;
+	uint32_t rt = 0;
+	uint32_t rd = 0;
+	uint32_t rs_v;
+	uint32_t rt_v;
+	uint32_t rd_v;
+	uint32_t sa = 0;
+	uint32_t instr;
+	mips_error err;
+	int testId;
+	for (int i = 0; i <= 1; i++){
+		switch (i){
+		case 0:
+			rd = 1;
+			sa = 0;
+			break;
+		case 1:
+			rd = 0;
+			sa = 1;
+			break;
+		}
+		instr = R_type_instr(rs, rt, rd, sa, 27);
+		testId = mips_test_begin_test("DIVU");
+		err = set_step_read(state, 33, 0, 33, 0, instr, 33, rd_v, mem);
+		mips_test_end_test(testId, err = mips_ExceptionInvalidInstruction, "DIVU invalid rs/rt/sa");
+	}
+
+	//Test 3 32 bit unsigned division (no remainder)
+	testId = mips_test_begin_test("DIVU");
+	rs = 1;
+	rt = 2;
+	rs_v = 6;
+	rt_v = 2;
+	rd = 0;
+	sa = 0;
+	instr = R_type_instr(rs, rt, rd, sa, 27);
+	err = set_step_read(state, rs, rs_v, rt, rt_v, instr, 33, rd_v, mem);
+	bool success = (err == mips_Success);
+	rd = 3;
+	instr = R_type_instr(0, 0, rd, 0, 18);
+	err = set_step_read(state, 33, rs_v, 33, rt_v, instr, rd, rd_v, mem);
+	mips_test_end_test(testId, success && (err == mips_Success) && (rd_v == 3), "DIVU 6/2=3");
+
+	//Test 4 32 bit unsigned division (with remainder
+	testId = mips_test_begin_test("DIVU");
+	rs = 1;
+	rt = 2;
+	rs_v = 7;
+	rt_v = 3;
+	rd = 0;
+	sa = 0;
+	instr = R_type_instr(rs, rt, rd, sa, 27);
+	err = set_step_read(state, rs, rs_v, rt, rt_v, instr, 33, rd_v, mem);
+	success = (err == mips_Success);
+
+	//Read LO
+	rd = 3;
+	instr = R_type_instr(0, 0, rd, 0, 18);
+	err = set_step_read(state, 33, rs_v, 33, rt_v, instr, rd, rd_v, mem);
+	success = success && (err == mips_Success) && (rd_v == 2);
+	//Read HI
+	instr = R_type_instr(0, 0, rd, 0, 16);
+	err = set_step_read(state, 33, rs_v, 33, rt_v, instr, rd, rd_v, mem);
+	mips_test_end_test(testId, success && (err == mips_Success) && (rd_v == 1), "DIVU 7/3=LO(2)+HI(1)");
+
+	//Test 4 64 bit unsigned multiplication (check when bit31!=0 -> negative)
+	testId = mips_test_begin_test("DIVU");
+	rs = 1;
+	rt = 2;
+	rs_v = 0x80000000;
+	rt_v = 2;
+	rd = 0;
+	sa = 0;
+	instr = R_type_instr(rs, rt, rd, sa, 27);
+	err = set_step_read(state, rs, rs_v, rt, rt_v, instr, 33, rd_v, mem);
+	success = (err == mips_Success);
+
+	//Read LO
+	rd = 3;
+	instr = R_type_instr(0, 0, rd, 0, 18);
+	err = set_step_read(state, 33, rs_v, 33, rt_v, instr, rd, rd_v, mem);
+	success = success && (err == mips_Success) && (rd_v == 0x40000000);
+	//Read HI
+	instr = R_type_instr(0, 0, rd, 0, 16);
+	err = set_step_read(state, 33, rs_v, 33, rt_v, instr, rd, rd_v, mem);
+	mips_test_end_test(testId, success && (err == mips_Success) && (rd_v == 0), "0x80000000/2=LO(0x40000000)+HI(0x0)");
+
+}
+
+void test_word_to_big_mem(const uint32_t Data, uint8_t* output){
 	output[0] = (Data >> 24) & 0xFF;
 	output[1] = (Data >> 16) & 0xFF;
 	output[2] = (Data >> 8) & 0xFF;

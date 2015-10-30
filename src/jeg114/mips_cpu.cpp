@@ -15,6 +15,8 @@ using namespace std;
 
 mips_cpu_h mips_cpu_create(mips_mem_h mem){
 	mips_cpu_h new_cpu = new mips_cpu_impl (mem);
+	//fprintf(stdout, "Mem: 0x%08x \n", mem);
+	//fprintf(stdout, "Mem_handle: 0x%08x \n", new_cpu->mem_handle);
 	return new_cpu;
 }
 

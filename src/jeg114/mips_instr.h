@@ -181,6 +181,8 @@ bool bigger_than(uint32_t a, uint32_t b);
 //Provides twos complement negative version of input
 uint64_t twos_complement(uint64_t a);
 
+void cpu_to_small_Endi(uint32_t pData, uint8_t* buffer);
+
 #ifdef __cplusplus
 };
 #endif

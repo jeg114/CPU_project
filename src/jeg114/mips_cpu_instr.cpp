@@ -184,7 +184,7 @@ mips_error LH(mips_cpu_h state, uint8_t rs, uint8_t rt, uint16_t imm){
 	if ((address & 1) > 0){
 		return mips_ExceptionInvalidAlignment;
 	}
-	bool top_half = address >> 1 & 0x1;
+	bool top_half = !((address >> 1) & 0x1);
 	address = address & 0xFFFFFFFC;
 	uint8_t buffer[4];
 	mips_error err = mips_mem_read(state->mem_handle, address, 4, buffer);

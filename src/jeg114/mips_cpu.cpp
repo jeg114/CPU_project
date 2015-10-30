@@ -22,6 +22,7 @@ mips_cpu_h mips_cpu_create(mips_mem_h mem){
 
 mips_error mips_cpu_reset(mips_cpu_h state){
 	state->pc = 0;
+	state->pcN = 4;
 	state->LO = 0;
 	state->HI = 0;
 	for (int i = 0; i <= 31; i++){

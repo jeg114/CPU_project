@@ -173,8 +173,7 @@ mips_error LB(mips_cpu_h state, uint8_t rs, uint8_t rt, uint16_t imm){
 		return err;
 	}
 
-	uint32_t read = (to_big_Endi(buffer) >> ((3-byte_adress) * 8)) & 0xFF;
-	state->GPReg[rt] = sign_extend8((uint8_t)read);
+	state->GPReg[rt] = sign_extend8(buffer[byte_adress]);
 
 	return state->advPC(1);
 }
@@ -258,15 +257,16 @@ mips_error LBU(mips_cpu_h state, uint8_t rs, uint8_t rt, uint16_t imm){
 	if (err != mips_Success){
 		return err;
 	}
-
-	state->GPReg[rt] = (to_big_Endi(buffer) >> ((3-byte_adress) * 8)) & 0xFF;
+	if (rt != 0){
+		state->GPReg[rt] = buffer[byte_adress] & 0xFF;
+	}
 
 	return state->advPC(1);
 }
 
 mips_error LHU(mips_cpu_h state, uint8_t rs, uint8_t rt, uint16_t imm){
 	uint32_t address = state->GPReg[rs] + sign_extend(imm);
-	if ((address & 1) > 0){
+	if ((address & 1) != 0){
 		return mips_ExceptionInvalidAlignment;
 	}
 	bool top_half = address >> 1 & 0x1;
@@ -278,7 +278,9 @@ mips_error LHU(mips_cpu_h state, uint8_t rs, uint8_t rt, uint16_t imm){
 		return err;
 	}
 
-	state->GPReg[rt] = (to_big_Endi(buffer) >> (!top_half * 16)) & 0xFFFF;
+	if (rt != 0){
+		state->GPReg[rt] = (to_big_Endi(buffer) >> (!top_half * 16)) & 0xFFFF;
+	}
 
 	return state->advPC(1);
 }
